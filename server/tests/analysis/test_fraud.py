@@ -99,3 +99,9 @@ def test_night_unknown_needs_a_week_of_history():
             for d in range(3)]
     now = T0 + timedelta(days=3)
     assert check_night_unknown({sig.id: acts}, [sig], now, history_start=T0 - timedelta(days=1)) == []
+
+
+def test_meter_gap_skipped_when_sensor_data_missing():
+    alert = check_meter_gap(entries(50, 40, 30), lambda a, b: 8.0, coverage_between=lambda a, b: 0.8)
+    assert alert is None
+    assert check_meter_gap(entries(50, 40, 30), lambda a, b: 8.0, coverage_between=lambda a, b: 0.99)

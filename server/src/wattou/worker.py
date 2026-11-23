@@ -97,8 +97,11 @@ async def analyze_foyer(s: AsyncSession, pub: Publisher, notifier: Notifier, foy
 
         readings = [e for e in entries if e.kind == "reading"][-3:]
         pairs = zip(readings, readings[1:], strict=False)
+        pairs = list(pairs)
         cache = {(p.ts, c.ts): await measured(p.ts, c.ts) for p, c in pairs}
-        if (g := fraud.check_meter_gap(entries, lambda a, b: cache[(a, b)])):
+        cover = {(p.ts, c.ts): await repo.coverage_between(s, foyer_id, p.ts, c.ts) for p, c in pairs}
+        if (g := fraud.check_meter_gap(entries, lambda a, b: cache[(a, b)],
+                                       lambda a, b: cover[(a, b)])):
             found.append(g)
         two_weeks = await repo.activations_between(s, foyer_id, window_end - timedelta(days=14),
                                                    window_end)

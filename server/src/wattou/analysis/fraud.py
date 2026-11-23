@@ -41,7 +41,9 @@ def check_absence(activations: list[Activation], sigs: list[ApplianceSig],
 
 
 def check_meter_gap(entries: list[CreditEntry],
-                    measured_between: Callable[[datetime, datetime], float]) -> Alert | None:
+                    measured_between: Callable[[datetime, datetime], float],
+                    coverage_between: Callable[[datetime, datetime], float] | None = None,
+                    min_coverage: float = 0.95) -> Alert | None:
     """Le compteur décompte > 10 % de plus que le capteur sur les 2 derniers intervalles."""
     entries = sorted(entries, key=lambda e: e.ts)
     readings = [e for e in entries if e.kind == "reading"][-3:]
@@ -51,6 +53,8 @@ def check_meter_gap(entries: list[CreditEntry],
     for prev, cur in zip(readings, readings[1:], strict=False):
         recharged = sum(e.kwh for e in entries
                         if e.kind == "recharge" and prev.ts < e.ts <= cur.ts)
+        if coverage_between and coverage_between(prev.ts, cur.ts) < min_coverage:
+            return None  # données du capteur incomplètes : on n'accuse personne
         counted = prev.kwh + recharged - cur.kwh
         measured = measured_between(prev.ts, cur.ts)
         if counted < GAP_MIN_KWH or (counted - measured) / counted <= GAP_RATIO:

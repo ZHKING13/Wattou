@@ -86,14 +86,24 @@ async def first_ts(s: AsyncSession, foyer_id: UUID) -> datetime | None:
     return (await s.execute(select(func.min(r.ts)).where(r.foyer_id == foyer_id))).scalar_one()
 
 
+# Énergie = Σ p_w · durée jusqu'à la mesure suivante (plafonnée à MAX_DT_S) : un message
+# perdu ne fait pas baisser l'énergie, un vrai trou (coupure) ne compte presque rien.
+MAX_DT_S = 10
+_WEIGHTED = (
+    "SELECT ts, p_w * LEAST(COALESCE(EXTRACT(EPOCH FROM lead(ts) OVER (ORDER BY ts) - ts), 1), "
+    f"{MAX_DT_S}) AS ws FROM meter_readings WHERE foyer_id = :f AND ts > :a AND ts <= :z"
+)
+
+
 async def energy_by_bucket(s: AsyncSession, foyer_id: UUID, start: datetime, end: datetime,
                            step: str) -> list[tuple[datetime, float]]:
-    """kWh par seau. Hypothèse : 1 mesure/s ; les trous ne comptent pas d'énergie."""
+    """kWh par seau [start, end)."""
     interval = {"minute": timedelta(minutes=1), "hour": timedelta(hours=1), "day": timedelta(days=1)}[step]
     rows = await s.execute(text(
-        "SELECT time_bucket(:iv, ts) AS b, sum(p_w) / 3600000.0 "
-        "FROM meter_readings WHERE foyer_id = :f AND ts >= :a AND ts < :z "
-        "GROUP BY b ORDER BY b"), {"iv": interval, "f": foyer_id, "a": start, "z": end})
+        f"SELECT time_bucket(:iv, ts) AS b, sum(ws) / 3600000.0 FROM ({_WEIGHTED}) x "
+        "WHERE ts >= :a2 AND ts < :z2 GROUP BY b ORDER BY b"),
+        {"iv": interval, "f": foyer_id, "a": start - timedelta(seconds=1), "z": end,
+         "a2": start, "z2": end})
     return [(b, float(kwh)) for b, kwh in rows]
 
 
@@ -126,10 +136,19 @@ async def set_low_credit_days(s: AsyncSession, foyer_id: UUID, days: float) -> N
 
 # --- énergie ---------------------------------------------------------------
 async def energy_between(s: AsyncSession, foyer_id: UUID, start: datetime, end: datetime) -> float:
+    """kWh sur (start, end]."""
+    v = (await s.execute(text(f"SELECT COALESCE(sum(ws), 0) FROM ({_WEIGHTED}) x"),
+                         {"f": foyer_id, "a": start, "z": end})).scalar_one()
+    return float(v) / 3_600_000
+
+
+async def coverage_between(s: AsyncSession, foyer_id: UUID, start: datetime, end: datetime) -> float:
+    """Part des secondes de (start, end] couvertes par une mesure (capteur ≈ 1 mesure/s)."""
     r = m.meter_readings.c
-    q = select(func.coalesce(func.sum(r.p_w), 0.0)).where(
-        r.foyer_id == foyer_id, r.ts > start, r.ts <= end)
-    return float((await s.execute(q)).scalar_one()) / 3_600_000
+    n = (await s.execute(select(func.count()).where(
+        r.foyer_id == foyer_id, r.ts > start, r.ts <= end))).scalar_one()
+    seconds = (end - start).total_seconds()
+    return n / seconds if seconds > 0 else 0.0
 
 
 async def plug_energy(s: AsyncSession, foyer_id: UUID, start: datetime,

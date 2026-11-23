@@ -54,3 +54,13 @@ async def test_first_ts(session):
     for s in (5, 2, 9):
         await repo.insert_meter(session, f, ms(T0 + timedelta(seconds=s)))
     assert await repo.first_ts(session, f) == T0 + timedelta(seconds=2)
+
+
+async def test_energy_is_time_weighted_when_messages_are_lost(session):
+    f = await repo.create_foyer(session, "Test")
+    await repo.insert_meter_batch(session, f, [ms(T0 + timedelta(seconds=s)) for s in range(0, 3600, 2)])
+    assert abs(await repo.energy_between(session, f, T0 - timedelta(seconds=1), T0 + timedelta(hours=1))
+               - 1.0) < 0.001
+    [(_, kwh)] = await repo.energy_by_bucket(session, f, T0, T0 + timedelta(hours=1), "hour")
+    assert abs(kwh - 1.0) < 0.001
+    assert abs(await repo.coverage_between(session, f, T0, T0 + timedelta(hours=1)) - 0.5) < 0.01
