@@ -31,6 +31,17 @@ def test_four_appliances_recognized(sc):
             ok.append(label)
         print(f"{label}: api={got:.2f} kWh vérité={truth:.2f} kWh")
     assert len(ok) >= 4, ok
+    # les prises mesurent directement ; la reconnaissance par désagrégation (NILM) est jugée à part
+    assert {"Clim", "Congélateur"} <= set(ok), ok
+
+
+def test_no_false_fraud_alert_on_normal_weeks(sc):
+    alerts = sc.get("/alerts")
+    assert not [a for a in alerts if a["kind"] == "night_unknown"], alerts
+    for a in alerts:
+        if a["kind"] == "absence_load":
+            assert TAP[0] <= dt(a["ts"]) <= TAP[1], a
+    assert not [a for a in alerts if a["kind"] == "stuck"], alerts
 
 
 def test_depletion_within_one_day(sc):
@@ -56,3 +67,4 @@ def test_low_credit_rule_cuts_iron(sc):
     assert sc.summary_end["days_left"] < 2
     assert any(line.endswith('/prise-fer/cmd {"on":false}') for line in sc.commands), sc.commands
     assert not any("/prise-frigo/cmd" in line for line in sc.commands)
+    assert [a for a in sc.get("/alerts") if a["kind"] == "low_credit_rule"]
