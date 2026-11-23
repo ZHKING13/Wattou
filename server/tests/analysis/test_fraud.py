@@ -105,3 +105,12 @@ def test_meter_gap_skipped_when_sensor_data_missing():
     alert = check_meter_gap(entries(50, 40, 30), lambda a, b: 8.0, coverage_between=lambda a, b: 0.8)
     assert alert is None
     assert check_meter_gap(entries(50, 40, 30), lambda a, b: 8.0, coverage_between=lambda a, b: 0.99)
+
+
+def test_night_load_seen_since_first_week_not_new():
+    """Cas e2e : au 8e jour, la clim vue dès le 1er jour n'est pas « nouvelle »."""
+    sig = ApplianceSig(uuid4(), None, 1100, 0.9, 20)
+    history_start = T0 - timedelta(days=7, seconds=55)
+    acts = [Activation(history_start + timedelta(days=d, hours=1), history_start + timedelta(days=d, hours=3),
+                       1100, 0.9) for d in range(7)]
+    assert check_night_unknown({sig.id: acts}, [sig], T0, history_start) == []

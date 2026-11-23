@@ -87,13 +87,15 @@ def check_night_unknown(activations_by_sig: dict[UUID, list[Activation]],
     """
     out = []
     since = now - timedelta(days=7)
-    if history_start > since:
-        return []
     for s in sigs:
         if s.label or s.device_id or s.essential:
             continue
         acts = activations_by_sig.get(s.id, [])
-        if any(a.start < since for a in acts):
+        if not acts:
+            continue
+        first_seen = min(a.start for a in acts)
+        # nouvelle = apparue dans les 7 derniers jours, après au moins 7 jours d'observation sans elle
+        if first_seen < since or first_seen - history_start < timedelta(days=7):
             continue
         nights = {_night(a.start) for a in acts}
         nights.discard(None)
