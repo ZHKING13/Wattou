@@ -32,7 +32,7 @@ class MqttPublisher:
         self.client = client
 
     async def publish(self, topic: str, payload: str, retain: bool = False) -> None:
-        await self.client.publish(topic, payload, qos=0, retain=retain)
+        await self.client.publish(topic, payload, qos=1, retain=retain)
 
 
 async def listen(client: aiomqtt.Client, runner: Runner, foyer: str) -> None:
