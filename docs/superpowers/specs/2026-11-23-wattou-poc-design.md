@@ -59,8 +59,11 @@ douleurs exprimées par le fondateur :
 - **Réseau instable** : délestages, baisses/surtensions, coupures internet → les appareils doivent
   fonctionner localement et le système doit tolérer les trous de données.
 - **Téléphones Android d'entrée de gamme et data chère** → app légère, peu de données échangées.
-- **Contrainte physique anti-fraude** : le capteur doit être posé **juste à la sortie du compteur**,
+- **Contrainte physique anti-fraude** : la pince doit être clipsée **juste à la sortie du compteur**,
   avant toute dérivation, sinon un branchement sauvage lui échappe.
+- **Installation par le ménage lui-même** : aucune intervention sur les fils (pas de dénudage, pas
+  d'ouverture du tableau). Il faut que le câble de sortie du compteur soit accessible et qu'une
+  prise se trouve à portée du câble de la pince.
 - **Installation monophasée 220–230 V / 50 Hz** supposée (cas courant des ménages) ; le triphasé est
   hors POC.
 - **Limite de la désagrégation à ~1 Hz** : seuls les appareils à forts paliers marche/arrêt sont
@@ -86,6 +89,18 @@ douleurs exprimées par le fondateur :
   l'architecture du produit, sans boîtier supplémentaire.
 - C. Cloud Tuya — rejeté : pas de fonctionnement hors ligne, données pauvres, dépendance fournisseur.
 
+### Pour le capteur de consommation (décision du fondateur : 1)
+- Boîtier branché seul sur une prise — rejeté : il voit la tension mais pas le courant des autres
+  appareils, donc ni les watts, ni le crédit, ni un branchement sauvage.
+- **1. Pince + boîtier branché sur une prise** — retenu. La pince se clipse autour du câble de sortie
+  du compteur sans rien couper ; le boîtier, branché sur une prise voisine, en tire son alimentation
+  et la référence de tension → vraie puissance à ~1 mesure/seconde. Installable par le ménage.
+- 2. Lecteur optique sur la LED « imp/kWh » du compteur — option future : mesure exactement ce que
+  la CIE décompte (excellent pour la fraude) mais trop lent pour bien reconnaître les appareils, et
+  dépend de l'accès au compteur.
+- Module câblé sur l'arrivée par un électricien — rejeté : installation non reproductible à
+  l'échelle d'un produit grand public.
+
 ### Pour l'interface (décision du fondateur : application mobile)
 WhatsApp a été envisagé puis écarté au profit d'une **application mobile** avec notifications push.
 
@@ -96,8 +111,8 @@ WhatsApp a été envisagé puis écarté au profit d'une **application mobile** 
 ```
  Logement                                   Serveur Wattou (cloud)
 ┌───────────────────────────┐            ┌─────────────────────────────────────┐
-│ Capteur pince (ESP32 +    │──MQTT/TLS─▶│ Broker MQTT (Mosquitto)              │
-│ PZEM-004T) sortie compteur│            │   │                                  │
+│ Pince sortie compteur +   │──MQTT/TLS─▶│ Broker MQTT (Mosquitto)              │
+│ boîtier sur prise (ESP32) │            │   │                                  │
 │ Prises connectées ESPHome │◀─commandes─│   ▼                                  │
 │ Émetteur IR clim ESPHome  │            │ Ingestion ─▶ TimescaleDB (Postgres)   │
 └───────────────────────────┘            │ Analyse : événements, appareils,     │
@@ -116,14 +131,23 @@ mêmes commandes. Passer au kit réel = arrêter le simulateur et brancher les a
 
 | Élément | Choix proposé | Rôle | Prix indicatif |
 |---|---|---|---|
-| Capteur principal | ESP32 + module **PZEM-004T v3 (100 A, pince ouvrante)**, boîtier, alimentation 5 V | Puissance, tension, courant, énergie ≈ 1/s | 15 000 – 20 000 FCFA |
+| Capteur principal | **Pince ouvrante** 100 A (type SCT-013-000, prise jack) + **boîtier ESP32 avec puce de mesure** (type ATM90E26/ATM90E32, supportée par ESPHome) + **transformateur 230 V → 9 V AC enfichable** dans une prise | La pince donne le courant, le transformateur donne la tension et alimente le boîtier → puissance, tension, courant, facteur de puissance, énergie ≈ 1/s | 25 000 – 35 000 FCFA |
 | Prises (×2–3) | Prises **pré-flashées ESPHome avec mesure** (type Athom V2, 16 A, norme FR/Schuko) | Pilotage + mesure de référence par appareil | 8 000 – 12 000 FCFA pièce |
 | Émetteur IR clim | ESP32/ESP8266 + module émetteur IR (ESPHome `climate_ir`) | Programmer la clim comme sa télécommande | 5 000 – 8 000 FCFA |
 
-Total ≈ 40 000 – 60 000 FCFA. **L'installation du capteur sur l'arrivée électrique se fait par un
-électricien** (raccordement tension secteur). Alternative sans bricolage pour le capteur : un
-compteur à pince du commerce avec MQTT natif (ex. Shelly EM Gen3) — choix final au constructeur
-selon la disponibilité locale, à condition de publier ≥ 1 mesure/seconde en MQTT.
+Total ≈ 50 000 – 70 000 FCFA. **Installation par le ménage** : clipser la pince autour du câble de
+phase en sortie du compteur, brancher le transformateur sur une prise proche, relier pince et
+transformateur au boîtier. Aucun fil secteur n'entre dans le boîtier (seulement du 9 V AC et le
+signal de la pince), ce qui le rend sûr à manipuler. La pince ne doit entourer **qu'un seul
+conducteur** (la phase) ; le guide d'installation de l'app doit le montrer en photos.
+
+Points d'attention :
+- **Distance pince ↔ prise** : prévoir une rallonge de câble de pince de 3 à 5 m ; au-delà, vérifier
+  la précision.
+- **Étalonnage** : une fois à l'installation, en comparant avec une charge connue (ex. une prise
+  connectée du kit qui alimente un appareil) ; le facteur d'étalonnage est stocké par foyer.
+- **Sens de la pince** : une pince à l'envers donne une puissance négative ; le boîtier la corrige
+  automatiquement (valeur absolue ou inversion détectée à l'installation).
 
 Les prises servent aussi de **vérité terrain** : la consommation qu'elles mesurent permet de valider
 la reconnaissance d'appareils.
@@ -211,7 +235,8 @@ docs/         specs et plans
 ## 7. Décisions du fondateur vs choix proposés
 
 **Décidé par le fondateur** : cible ménages en Côte d'Ivoire ; les trois douleurs ; pilotage par
-matériel du commerce reprogrammé ; POC simulé puis réel chez lui ; plateforme propre ; application
+matériel du commerce reprogrammé ; capteur « pince + boîtier branché sur une prise »,
+installable par le ménage ; POC simulé puis réel chez lui ; plateforme propre ; application
 mobile plutôt que WhatsApp ; dépôt `Wattou`.
 
 **Choix proposés (à corriger si besoin)** : nom de travail « Wattou » ; Python/FastAPI/TimescaleDB ;
@@ -223,7 +248,9 @@ critères de réussite chiffrés ; hébergement local en Docker pour le POC.
 - Algorithme précis de détection de paliers et de regroupement (seuils, fenêtres).
 - Modèle de prévision (tant qu'il respecte les critères de réussite).
 - Schéma de base de données, format exact des messages MQTT.
-- Choix final du capteur (PZEM DIY ou compteur à pince du commerce) selon disponibilité locale.
+- Référence exacte de la puce de mesure et de la carte (assemblée par nous ou carte du commerce),
+  selon disponibilité locale, à condition de garder le principe « pince + boîtier sur prise » et
+  ≥ 1 mesure/seconde en MQTT.
 - Hébergement cloud pour la phase 2.
 
 ## 9. Questions ouvertes
