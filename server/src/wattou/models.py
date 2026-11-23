@@ -25,6 +25,7 @@ foyers = Table(
     Column("absence_mode", Boolean, nullable=False, server_default="false"),
     Column("absence_since", TS),
     Column("low_credit_days", Float, nullable=False, server_default="2"),
+    Column("low_credit_active", Boolean, nullable=False, server_default="false"),
     Column("created_at", TS, nullable=False, server_default=func.now()),
 )
 users = Table(

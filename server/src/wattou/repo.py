@@ -290,3 +290,7 @@ async def plug_series(s: AsyncSession, foyer_id: UUID, device_id: str, start: da
     rows = await s.execute(select(c.ts, c.p_w).where(
         c.foyer_id == foyer_id, c.device_id == device_id, c.ts > start, c.ts <= end).order_by(c.ts))
     return [(t, p) for t, p in rows]
+
+
+async def set_low_credit_active(s: AsyncSession, foyer_id: UUID, active: bool) -> None:
+    await s.execute(update(m.foyers).where(m.foyers.c.id == foyer_id).values(low_credit_active=active))

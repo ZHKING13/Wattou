@@ -122,9 +122,22 @@ async def analyze_foyer(s: AsyncSession, pub: Publisher, notifier: Notifier, foy
             n = len(past_days)
             if (p := al.check_peak(today_h, [x / n for x in past], window_end)):
                 found.append(p)
-        for device_id, cmd in low_credit_actions(status.days_left, foyer["low_credit_days"],
-                                                 await repo.device_views(s, foyer_id)):
-            await send_command(pub, foyer_id, device_id, cmd)
+        low = status.days_left is not None and status.days_left < foyer["low_credit_days"]
+        if low and not foyer["low_credit_active"]:
+            # déclenchement au franchissement du seuil seulement : l'utilisateur garde la main
+            actions = low_credit_actions(status.days_left, foyer["low_credit_days"],
+                                         await repo.device_views(s, foyer_id))
+            for device_id, cmd in actions:
+                await send_command(pub, foyer_id, device_id, cmd)
+            if actions:
+                done = ", ".join(sorted(d for d, _ in actions))
+                found.append(Alert("low_credit_rule", window_end,
+                                   f"Crédit bas : Wattou a coupé ou réduit {done} pour faire durer "
+                                   "votre crédit. Vous pouvez les rallumer depuis l'application.",
+                                   f"low_credit_rule:{window_end.isoformat()}"))
+            await repo.set_low_credit_active(s, foyer_id, True)
+        elif not low and foyer["low_credit_active"]:
+            await repo.set_low_credit_active(s, foyer_id, False)
     await _emit(s, notifier, foyer_id, found)
     await repo.set_analysis_state(s, foyer_id, boundary, open_)
 

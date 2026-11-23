@@ -124,3 +124,20 @@ async def test_outage_closes_open_activation(session):
     assert (await repo.get_analysis_state(session, f))[1] == []
     acts = await repo.activations_between(session, f, T0, end + timedelta(hours=4))
     assert len(acts) == 1 and acts[0][0].end <= end
+
+
+async def test_low_credit_rule_fires_once_and_tells_the_user(session):
+    f = await repo.create_foyer(session, "T")
+    await repo.upsert_device(session, f, "prise-fer", Meta(kind="plug", name="prise-fer"))
+    state = PlugState(ts=T0.isoformat(), p_w=0, on=True).model_dump(mode="json")
+    await repo.set_device_state(session, f, "prise-fer", state)
+    await repo.add_credit_entry(session, f, T0, "reading", 1.0, None)
+    end = await insert_profile(session, f, [(120, 333)])
+    pub = Pub()
+    await analyze_foyer(session, pub, LogNotifier(), f)
+    await insert_profile(session, f, [(2, 333)], start=end)
+    await analyze_foyer(session, pub, LogNotifier(), f)
+    cmds = [t for t, _ in pub.sent if t.endswith("/prise-fer/cmd")]
+    assert len(cmds) == 1
+    [rule] = [a for a in await repo.list_alerts(session, f) if a["kind"] == "low_credit_rule"]
+    assert "prise-fer" in rule["message"]
