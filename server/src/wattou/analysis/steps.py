@@ -1,10 +1,11 @@
 """Détection de paliers de puissance (allumages/extinctions) et appariement."""
 
+from datetime import datetime, timedelta
 from statistics import median
 
 from .types import Activation, Sample, Step
 
-__all__ = ["Activation", "Step", "detect_steps", "pair_steps", "segments"]
+__all__ = ["Activation", "Step", "detect_steps", "pair_steps", "segments", "track"]
 
 
 def segments(samples: list[Sample], max_gap_s: int = 120) -> list[list[Sample]]:
@@ -66,3 +67,29 @@ def pair_steps(steps: list[Step], open_: list[Activation],
                 closed.append(a)
                 break
     return closed, still_open
+
+
+MAX_OPEN = timedelta(hours=24)
+
+
+def track(samples: list[Sample], open_: list[Activation], last_ts: datetime, boundary: datetime,
+          max_gap_s: int = 120) -> tuple[list[Activation], list[Activation]]:
+    """Paliers de (last_ts, boundary] appariés segment par segment.
+
+    Un trou de données (délestage, coupure) ferme les activations ouvertes au dernier
+    échantillon avant le trou : sans mesure, on ne leur attribue pas d'énergie. Une activation
+    ouverte depuis plus de 24 h (palier d'extinction manqué) est abandonnée.
+    """
+    closed: list[Activation] = []
+    segs = segments(samples, max_gap_s)
+    for i, seg in enumerate(segs):
+        steps = [st for st in _detect(seg, 80, 3) if last_ts < st.ts <= boundary]
+        done, open_ = pair_steps(steps, open_)
+        closed += done
+        if i + 1 < len(segs) and segs[i + 1][0].ts > last_ts:
+            for a in open_:
+                a.end = max(a.start, seg[-1].ts)
+            closed += open_
+            open_ = []
+    now = samples[-1].ts if samples else boundary
+    return closed, [a for a in open_ if now - a.start <= MAX_OPEN]

@@ -112,3 +112,15 @@ async def test_plug_fridge_stuck_alert(session):
     await insert_profile(session, f, [(185, 145)])
     await analyze_foyer(session, Pub(), LogNotifier(), f)
     assert [a["kind"] for a in await repo.list_alerts(session, f)] == ["stuck"]
+
+
+async def test_outage_closes_open_activation(session):
+    f = await repo.create_foyer(session, "T")
+    end = await insert_profile(session, f, [(5, 50), (5, 1150)])
+    await analyze_foyer(session, Pub(), LogNotifier(), f)
+    assert len((await repo.get_analysis_state(session, f))[1]) == 1
+    await insert_profile(session, f, [(10, 50)], start=end + timedelta(hours=3))
+    await analyze_foyer(session, Pub(), LogNotifier(), f)
+    assert (await repo.get_analysis_state(session, f))[1] == []
+    acts = await repo.activations_between(session, f, T0, end + timedelta(hours=4))
+    assert len(acts) == 1 and acts[0][0].end <= end

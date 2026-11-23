@@ -14,7 +14,7 @@ from .analysis import alerts as al
 from .analysis import fraud
 from .analysis.appliances import assign
 from .analysis.rules import low_credit_actions
-from .analysis.steps import detect_steps, pair_steps
+from .analysis.steps import track
 from .analysis.types import Alert, ApplianceSig
 from .config import Settings, get_settings
 from .control import MqttPublisher, Publisher, send_command
@@ -67,8 +67,7 @@ async def analyze_foyer(s: AsyncSession, pub: Publisher, notifier: Notifier, foy
     samples = await repo.meter_samples(s, foyer_id, last_ts - timedelta(seconds=CONTEXT_S), window_end)
     window = [x for x in samples if x.ts > last_ts]
 
-    steps = [st for st in detect_steps(samples) if last_ts < st.ts <= boundary]
-    closed, open_ = pair_steps(steps, open_)
+    closed, open_ = track(samples, open_, last_ts, boundary)
     sigs = await _plug_sigs(s, foyer_id, await repo.list_appliances(s, foyer_id))
     assigned, sigs = assign(closed, sigs)
     await repo.save_appliances(s, foyer_id, sigs)

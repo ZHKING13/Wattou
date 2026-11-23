@@ -1,10 +1,9 @@
 """Contrat MQTT Wattou (copie conforme côté simulateur : simulator/src/wattou_sim/contract.py)."""
 
 import re
+from datetime import UTC, datetime
 from typing import Literal
 from uuid import UUID
-
-from datetime import UTC, datetime
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator
 
