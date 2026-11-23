@@ -73,11 +73,29 @@ def test_meter_gap_accounts_for_recharge():
 
 def test_night_unknown_three_nights():
     unknown = ApplianceSig(uuid4(), None, 400, 0.9, 5)
+    history_start = T0 - timedelta(days=30)
     acts = [Activation(T0 + timedelta(days=d), T0 + timedelta(days=d, hours=1), 400, 0.9)
             for d in range(3)]
     now = T0 + timedelta(days=3)
-    [alert] = check_night_unknown({unknown.id: acts}, [unknown], now)
+    [alert] = check_night_unknown({unknown.id: acts}, [unknown], now, history_start)
     assert alert.kind == "night_unknown"
-    assert check_night_unknown({unknown.id: acts[:2]}, [unknown], now) == []
+    assert check_night_unknown({unknown.id: acts[:2]}, [unknown], now, history_start) == []
     labeled = ApplianceSig(unknown.id, "clim", 400, 0.9, 5)
-    assert check_night_unknown({unknown.id: acts}, [labeled], now) == []
+    assert check_night_unknown({unknown.id: acts}, [labeled], now, history_start) == []
+
+
+def test_night_habit_since_installation_not_fraud():
+    """Un appareil nocturne présent dès l'installation (clim, congélateur) n'est pas suspect."""
+    sig = ApplianceSig(uuid4(), None, 1100, 0.9, 40)
+    acts = [Activation(T0 + timedelta(days=d), T0 + timedelta(days=d, hours=3), 1100, 0.9)
+            for d in range(-20, 3)]
+    now = T0 + timedelta(days=3)
+    assert check_night_unknown({sig.id: acts}, [sig], now, history_start=T0 - timedelta(days=20)) == []
+
+
+def test_night_unknown_needs_a_week_of_history():
+    sig = ApplianceSig(uuid4(), None, 400, 0.9, 5)
+    acts = [Activation(T0 + timedelta(days=d), T0 + timedelta(days=d, hours=1), 400, 0.9)
+            for d in range(3)]
+    now = T0 + timedelta(days=3)
+    assert check_night_unknown({sig.id: acts}, [sig], now, history_start=T0 - timedelta(days=1)) == []

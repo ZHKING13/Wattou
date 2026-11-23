@@ -73,19 +73,31 @@ def _night(t: datetime):
 
 
 def check_night_unknown(activations_by_sig: dict[UUID, list[Activation]],
-                        sigs: list[ApplianceSig], now: datetime) -> list[Alert]:
+                        sigs: list[ApplianceSig], now: datetime,
+                        history_start: datetime) -> list[Alert]:
+    """Charge inconnue *nouvelle* qui revient la nuit (≥ 3 nuits sur 7 jours).
+
+    « Nouvelle » : jamais vue avant les 7 derniers jours alors qu'on observait déjà le foyer
+    depuis au moins une semaine. Une habitude présente dès l'installation (clim, congélateur
+    pas encore nommés) n'est pas un branchement suspect.
+    """
     out = []
     since = now - timedelta(days=7)
+    if history_start > since:
+        return []
     for s in sigs:
         if s.label or s.device_id or s.essential:
             continue
-        nights = {_night(a.start) for a in activations_by_sig.get(s.id, []) if a.start >= since}
+        acts = activations_by_sig.get(s.id, [])
+        if any(a.start < since for a in acts):
+            continue
+        nights = {_night(a.start) for a in acts}
         nights.discard(None)
         if len(nights) >= 3:
             week = now.isocalendar()
             out.append(Alert(
                 "night_unknown", now,
-                f"Un appareil inconnu d'environ {round(s.delta_w)} W s'allume la nuit depuis "
+                f"Un nouvel appareil inconnu d'environ {round(s.delta_w)} W s'allume la nuit depuis "
                 "plusieurs jours. Vérifiez qu'aucun branchement n'a été fait sur votre installation.",
                 f"night_unknown:{s.id}:{week.year}-{week.week}"))
     return out

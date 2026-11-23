@@ -100,11 +100,12 @@ async def analyze_foyer(s: AsyncSession, pub: Publisher, notifier: Notifier, foy
         cache = {(p.ts, c.ts): await measured(p.ts, c.ts) for p, c in pairs}
         if (g := fraud.check_meter_gap(entries, lambda a, b: cache[(a, b)])):
             found.append(g)
-        week = await repo.activations_between(s, foyer_id, window_end - timedelta(days=7), window_end)
+        two_weeks = await repo.activations_between(s, foyer_id, window_end - timedelta(days=14),
+                                                   window_end)
         by_sig: dict[UUID, list] = defaultdict(list)
-        for a, sid in week:
+        for a, sid in two_weeks:
             by_sig[sid].append(a)
-        found += fraud.check_night_unknown(by_sig, sigs, window_end)
+        found += fraud.check_night_unknown(by_sig, sigs, window_end, await repo.first_ts(s, foyer_id))
         status = await credit_status(s, foyer_id, window_end, default_price)
         if (c := al.check_credit(status.days_left, foyer["low_credit_days"], status.depletion_at,
                                  window_end)):
