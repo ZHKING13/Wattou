@@ -63,11 +63,18 @@ class Scheduled(Appliance):
                  jitter_min: float = 15, seed: int = 0, essential: bool = False):
         super().__init__(name, pf, essential)
         self.on_w, self.windows, self.jitter_min, self.seed = on_w, windows, jitter_min, seed
+        self._cache: dict[tuple, tuple[datetime, datetime]] = {}
 
     def nominal_w(self) -> float:
         return self.on_w
 
     def _bounds(self, d: date, i: int) -> tuple[datetime, datetime]:
+        key = (d, i, self._tz)
+        if key not in self._cache:
+            self._cache[key] = self._compute_bounds(d, i)
+        return self._cache[key]
+
+    def _compute_bounds(self, d: date, i: int) -> tuple[datetime, datetime]:
         start, end = self.windows[i]
         r = _rng(self.seed, self.name, d.isoformat(), i)
         js = timedelta(minutes=r.uniform(-self.jitter_min, self.jitter_min))

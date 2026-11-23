@@ -27,12 +27,22 @@ def parse_scenario(spec: str):
     return SCENARIOS[name](parse_dt(start), parse_dt(end))
 
 
-class MqttPublisher:
-    def __init__(self, client: aiomqtt.Client):
-        self.client = client
+class BatchingPublisher:
+    """Publie en QoS 1 sans attendre chaque accusé : envois groupés par lots concurrents."""
+
+    def __init__(self, client, batch: int = 500):
+        self.client, self.batch = client, batch
+        self._pending: list = []
 
     async def publish(self, topic: str, payload: str, retain: bool = False) -> None:
-        await self.client.publish(topic, payload, qos=1, retain=retain)
+        self._pending.append(self.client.publish(topic, payload, qos=1, retain=retain))
+        if len(self._pending) >= self.batch:
+            await self.flush()
+
+    async def flush(self) -> None:
+        pending, self._pending = self._pending, []
+        if pending:
+            await asyncio.gather(*pending)
 
 
 async def listen(client: aiomqtt.Client, runner: Runner, foyer: str) -> None:
@@ -56,10 +66,13 @@ async def main(args) -> None:
     for s in args.scenario:
         h.add_scenario(parse_scenario(s))
     async with aiomqtt.Client(args.host, args.port, username=args.user,
-                              password=args.password, max_queued_outgoing_messages=0) as client:
-        runner = Runner(h, args.foyer, MqttPublisher(client), truth_path=args.truth,
+                              password=args.password, max_queued_outgoing_messages=0,
+                              max_inflight_messages=1000) as client:
+        pub = BatchingPublisher(client)
+        runner = Runner(h, args.foyer, pub, truth_path=args.truth,
                         seed=args.seed)
         await runner.start()
+        await pub.flush()
         listener = asyncio.create_task(listen(client, runner, args.foyer))
         t = parse_dt(args.start)
         try:
@@ -69,13 +82,15 @@ async def main(args) -> None:
                 t += timedelta(seconds=1)
                 if int(t.timestamp()) % 3600 == 0:
                     log.info("backfill %s", t.isoformat())
-                    await asyncio.sleep(0)
+            await pub.flush()
             clock = SimClock(t, args.speed)
             while args.until is None or t < parse_dt(args.until):
                 while t < clock.now():
                     await runner.step(t)
                     t += timedelta(seconds=1)
+                await pub.flush()
                 await asyncio.sleep(0.05)
+            await pub.flush()
         finally:
             listener.cancel()
             runner.close()
