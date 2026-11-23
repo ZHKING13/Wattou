@@ -93,3 +93,18 @@ async def test_bad_timestamp_and_nan_ignored_and_batch_survives(session, caplog)
     assert s.p_w == 500.0
     assert await repo.first_ts(session, f) == T0
     assert caplog.text.count("ignoré") == 6
+
+
+async def test_future_timestamp_ignored_when_bound_set(session, monkeypatch, caplog):
+    from datetime import UTC, datetime
+
+    from wattou import ingest
+
+    monkeypatch.setattr(ingest, "max_future", lambda: timedelta(hours=1))
+    f = await repo.create_foyer(session, "T")
+    future = (datetime.now(UTC) + timedelta(days=2)).isoformat()
+    p = json.dumps({"ts": future, "p_w": 1, "v": 228, "i_a": 1, "pf": 1, "e_kwh": 0}).encode()
+    caplog.set_level(logging.WARNING)
+    await handle_message(session, f"wattou/{f}/meter/state", p)
+    assert await repo.latest_ts(session, f) is None
+    assert "futur" in caplog.text

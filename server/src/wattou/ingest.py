@@ -3,6 +3,7 @@
 import asyncio
 import json
 import logging
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 import aiomqtt
@@ -37,6 +38,16 @@ class Batch:
 _known: set[UUID] = set()
 
 
+def max_future() -> timedelta | None:
+    h = get_settings().max_future_h
+    return timedelta(hours=h) if h > 0 else None
+
+
+def _too_far_ahead(ts: datetime) -> bool:
+    limit = max_future()
+    return limit is not None and ts > datetime.now(UTC) + limit
+
+
 async def _foyer_ok(session: AsyncSession, foyer_id: UUID) -> bool:
     if foyer_id in _known:
         return True
@@ -64,6 +75,9 @@ async def handle_message(session: AsyncSession, topic: str, payload: bytes,
             await repo.upsert_device(session, foyer_id, device_id, Meta(**data))
         elif leaf == "state" and "e_kwh" in data:
             st = MeterState(**data)
+            if _too_far_ahead(st.ts):
+                log.warning("message ignoré (horodatage dans le futur): %s %s", topic, st.ts)
+                return
             st = st.model_copy(update={"p_w": abs(st.p_w), "pf": abs(st.pf)})
             if batch is None:
                 await repo.insert_meter(session, foyer_id, st)
@@ -71,6 +85,9 @@ async def handle_message(session: AsyncSession, topic: str, payload: bytes,
                 batch.meter.setdefault(foyer_id, []).append(st)
         elif leaf == "state" and "on" in data:
             st = PlugState(**data)
+            if _too_far_ahead(st.ts):
+                log.warning("message ignoré (horodatage dans le futur): %s %s", topic, st.ts)
+                return
             st = st.model_copy(update={"p_w": abs(st.p_w)})
             if batch is None:
                 await repo.insert_plug(session, foyer_id, device_id, st)

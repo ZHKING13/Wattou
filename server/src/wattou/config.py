@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     )
     expo_push_enabled: bool = False
     worker_interval_s: float = 60
+    # rejette les mesures datées de plus de N h dans le futur (horloge murale). 0 = désactivé,
+    # nécessaire pour le simulateur accéléré ; à activer en phase 2 avec le vrai kit.
+    max_future_h: float = 0
 
 
 @lru_cache
