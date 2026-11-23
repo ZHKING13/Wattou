@@ -141,6 +141,15 @@ transformateur au boîtier. Aucun fil secteur n'entre dans le boîtier (seulemen
 signal de la pince), ce qui le rend sûr à manipuler. La pince ne doit entourer **qu'un seul
 conducteur** (la phase) ; le guide d'installation de l'app doit le montrer en photos.
 
+Schéma comparatif des deux poses (avec / sans électricien) :
+https://claude.ai/artifact/PSuiajMBUhJ9U4vbyisgeC
+
+```
+Compteur CIE ─▶ Disj. CIE ─┬─(pince sur la phase)──────────────▶ logement
+ (plombés, intouchables)   │      │ câble jack 3–5 m
+                           │   [Boîtier Wattou] ◀── 9 V AC ── [transfo] ── prise murale
+```
+
 Points d'attention :
 - **Distance pince ↔ prise** : prévoir une rallonge de câble de pince de 3 à 5 m ; au-delà, vérifier
   la précision.
@@ -174,9 +183,10 @@ la reconnaissance d'appareils.
   non attribuée = « autres / fond ».
 - **Coûts** : conversion kWh → FCFA avec une **grille tarifaire CIE configurable** (tranches, tarif
   social / domestique). Les valeurs exactes sont à renseigner et vérifier.
-- **Crédit** : l'utilisateur saisit dans l'app le crédit affiché par le compteur (et chaque recharge),
-  **en kWh ou en FCFA** selon ce qu'affiche son compteur. On en déduit le crédit restant en temps
-  réel à partir de la mesure.
+- **Crédit** : le compteur CIE affiche le crédit restant **en kWh** (confirmé par le fondateur).
+  L'utilisateur saisit dans l'app ce kWh affiché, et chaque recharge (montant FCFA + kWh obtenus).
+  On en déduit le crédit restant en temps réel à partir de la mesure ; la conversion en FCFA utilise
+  le prix moyen du kWh des dernières recharges (la grille tarifaire sert de repli).
 - **Modèle de données multi-foyers** dès le POC (un foyer = un compte + ses appareils), même si un
   seul foyer est utilisé.
 - **Prévision** : consommation journalière prévue à partir des jours récents et du profil par jour
@@ -185,8 +195,8 @@ la reconnaissance d'appareils.
   1. consommation inexpliquée (hors appareils connus et au-dessus du fond habituel) pendant le
      **mode absence** déclaré dans l'app ;
   2. apparition d'une charge inconnue récurrente aux heures inhabituelles ;
-  3. **écart compteur / capteur** : à chaque saisie du crédit, comparer le décompte du compteur CIE
-     avec l'énergie mesurée ; un écart durable > 10 % signale une dérivation entre compteur et capteur
+  3. **écart compteur / capteur** : à chaque saisie du crédit, comparer les kWh décomptés par le
+     compteur CIE avec les kWh mesurés ; un écart durable > 10 % signale une dérivation entre compteur et capteur
      (ou un capteur mal posé).
 - **Alertes** : crédit bas, fin de crédit prévue, pic anormal, frigo qui ne s'arrête plus,
   branchement suspect, coupure / retour du courant, tension hors plage dangereuse.
@@ -255,5 +265,4 @@ critères de réussite chiffrés ; hébergement local en Docker pour le POC.
 
 ## 9. Questions ouvertes
 - Grille tarifaire CIE exacte applicable au compteur du fondateur (tarif social ou domestique ?).
-- Le compteur du fondateur affiche-t-il le crédit restant en kWh ou en FCFA ?
 - Marque et modèle de la clim du fondateur (pour le protocole infrarouge).
