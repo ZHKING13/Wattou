@@ -119,10 +119,15 @@ async def analyze_foyer(s: AsyncSession, pub: Publisher, notifier: Notifier, foy
         today = window_end.replace(hour=0, minute=0, second=0, microsecond=0)
         hours = await repo.energy_by_bucket(s, foyer_id, today - timedelta(days=7), window_end, "hour")
         today_h, past = [0.0] * 24, [0.0] * 24
+        past_days = set()
         for b, kwh in hours:
             (today_h if b >= today else past)[b.hour] += kwh
-        if (p := al.check_peak(today_h, [x / 7 for x in past], window_end)):
-            found.append(p)
+            if b < today:
+                past_days.add(b.date())
+        if len(past_days) >= 3:  # pas de « pic » sans historique pour comparer
+            n = len(past_days)
+            if (p := al.check_peak(today_h, [x / n for x in past], window_end)):
+                found.append(p)
         for device_id, cmd in low_credit_actions(status.days_left, foyer["low_credit_days"],
                                                  await repo.device_views(s, foyer_id)):
             await send_command(pub, foyer_id, device_id, cmd)
@@ -157,4 +162,5 @@ async def run_worker(settings: Settings, interval_s: float = 60) -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(message)s")
-    asyncio.run(run_worker(get_settings()))
+    st = get_settings()
+    asyncio.run(run_worker(st, st.worker_interval_s))

@@ -85,3 +85,10 @@ async def test_outage_alert_from_gap(session):
     await analyze_foyer(session, Pub(), LogNotifier(), f)
     alerts = await repo.list_alerts(session, f)
     assert [a["kind"] for a in alerts] == ["outage"]
+
+
+async def test_no_peak_alert_without_history(session):
+    f = await repo.create_foyer(session, "T")
+    await insert_profile(session, f, [(60, 50), (60, 1500), (30, 50)], start=T0.replace(hour=1))
+    await analyze_foyer(session, Pub(), LogNotifier(), f)
+    assert [a["kind"] for a in await repo.list_alerts(session, f) if a["kind"] == "peak"] == []
