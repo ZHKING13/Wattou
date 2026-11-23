@@ -54,6 +54,15 @@ def attribute(samples: list[Sample], assigned: list[tuple[Activation, UUID]],
         return {}
     start, end = samples[0].ts, samples[-1].ts + timedelta(seconds=1)  # 1 mesure = 1 s
     total = sum(s.p_w for s in samples) / 3_600_000
+    night = [s.p_w for s in samples if s.ts.hour < 5] or [s.p_w for s in samples]
+    return attribute_totals(total, len(samples) / 3600, _percentile(night, 0.05), assigned, sigs,
+                            plug_energy, start, end)
+
+
+def attribute_totals(total_kwh: float, hours_measured: float, baseline_w: float,
+                     assigned: list[tuple[Activation, UUID]], sigs: list[ApplianceSig],
+                     plug_energy: dict[str, float], start: datetime, end: datetime) -> dict[str, float]:
+    """Même répartition qu'`attribute`, à partir d'agrégats (longues périodes, côté API)."""
     by_id = {s.id: s for s in sigs}
     out: dict[str, float] = {}
     for s in sigs:
@@ -65,11 +74,9 @@ def attribute(samples: list[Sample], assigned: list[tuple[Activation, UUID]],
             continue
         out[str(sid)] = out.get(str(sid), 0.0) + a.delta_w * _overlap_h(a, start, end) / 1000
     used = sum(out.values())
-    if used > total and used > 0:
-        out = {k: v * total / used for k, v in out.items()}
-        used = total
-    night = [s.p_w for s in samples if s.ts.hour < 5] or [s.p_w for s in samples]
-    hours = len(samples) / 3600
-    out["fond"] = min(_percentile(night, 0.05) * hours / 1000, total - used)
-    out["autres"] = max(0.0, total - used - out["fond"])
+    if used > total_kwh and used > 0:
+        out = {k: v * total_kwh / used for k, v in out.items()}
+        used = total_kwh
+    out["fond"] = max(0.0, min(baseline_w * hours_measured / 1000, total_kwh - used))
+    out["autres"] = max(0.0, total_kwh - used - out["fond"])
     return out

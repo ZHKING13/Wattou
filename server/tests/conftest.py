@@ -10,7 +10,7 @@ TEST_DB = os.environ.setdefault(
 )
 os.environ.setdefault("WATTOU_DATABASE_URL", TEST_DB)
 os.environ.setdefault("WATTOU_MQTT_HOST", "localhost")
-os.environ.setdefault("WATTOU_JWT_SECRET", "test-secret")
+os.environ.setdefault("WATTOU_JWT_SECRET", "test-secret-test-secret-test-secret-0123")
 
 
 @pytest.fixture(scope="session")

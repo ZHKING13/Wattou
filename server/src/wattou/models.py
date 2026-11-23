@@ -42,6 +42,7 @@ devices = Table(
     Column("name", Text, nullable=False),
     Column("essential", Boolean, nullable=False, server_default="false"),
     Column("last_state", JSONB, nullable=False, server_default="{}"),
+    Column("schedule", JSONB, nullable=False, server_default='{"slots": []}'),
     PrimaryKeyConstraint("foyer_id", "id"),
 )
 meter_readings = Table(

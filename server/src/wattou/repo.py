@@ -249,3 +249,31 @@ async def add_push_token(s: AsyncSession, foyer_id: UUID, token: str) -> None:
 async def push_tokens(s: AsyncSession, foyer_id: UUID) -> list[str]:
     q = select(m.push_tokens.c.token).where(m.push_tokens.c.foyer_id == foyer_id)
     return list((await s.execute(q)).scalars())
+
+
+# --- utilisateurs et appareils (API) -----------------------------------------
+async def create_user(s: AsyncSession, phone: str, password_hash: str, foyer_id: UUID) -> UUID:
+    return (await s.execute(m.users.insert().values(
+        phone=phone, password_hash=password_hash, foyer_id=foyer_id).returning(m.users.c.id))).scalar_one()
+
+
+async def get_user_by_phone(s: AsyncSession, phone: str) -> dict | None:
+    row = (await s.execute(select(m.users).where(m.users.c.phone == phone))).mappings().first()
+    return dict(row) if row else None
+
+
+async def get_device(s: AsyncSession, foyer_id: UUID, device_id: str) -> dict | None:
+    row = (await s.execute(select(m.devices).where(
+        m.devices.c.foyer_id == foyer_id, m.devices.c.id == device_id))).mappings().first()
+    return dict(row) if row else None
+
+
+async def list_devices(s: AsyncSession, foyer_id: UUID) -> list[dict]:
+    rows = await s.execute(select(m.devices).where(m.devices.c.foyer_id == foyer_id)
+                           .order_by(m.devices.c.id))
+    return [dict(r) for r in rows.mappings()]
+
+
+async def set_schedule(s: AsyncSession, foyer_id: UUID, device_id: str, schedule: dict) -> None:
+    await s.execute(update(m.devices).where(m.devices.c.foyer_id == foyer_id,
+                                            m.devices.c.id == device_id).values(schedule=schedule))
