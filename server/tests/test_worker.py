@@ -66,7 +66,7 @@ async def test_low_credit_triggers_command(session):
     f = await repo.create_foyer(session, "T")
     for dev, essential in (("prise-fer", False), ("prise-frigo", True)):
         await repo.upsert_device(session, f, dev, Meta(kind="plug", name=dev, essential=essential))
-        state = PlugState(ts=T0.isoformat(), p_w=100, on=True).model_dump()
+        state = PlugState(ts=T0.isoformat(), p_w=100, on=True).model_dump(mode="json")
         await repo.set_device_state(session, f, dev, state)
     await repo.add_credit_entry(session, f, T0, "reading", 1.0, None)
     await insert_profile(session, f, [(120, 333)])

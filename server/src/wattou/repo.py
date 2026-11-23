@@ -13,8 +13,8 @@ from .analysis.types import Activation, ApplianceSig, CreditEntry, DeviceView, S
 from .contract import Meta, MeterState, PlugState
 
 
-def _dt(s: str) -> datetime:
-    return datetime.fromisoformat(s)
+def _dt(s: str | datetime) -> datetime:
+    return s if isinstance(s, datetime) else datetime.fromisoformat(s)
 
 
 # --- foyers ---------------------------------------------------------------

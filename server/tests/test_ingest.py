@@ -73,3 +73,23 @@ async def test_batch_buffers_meter_until_flush(session):
     await batch.flush(session)
     assert len(await repo.meter_samples(session, f, T0 - timedelta(1), T0 + timedelta(1))) == 5
     assert len(batch) == 0
+
+
+async def test_bad_timestamp_and_nan_ignored_and_batch_survives(session, caplog):
+    from wattou.ingest import Batch
+
+    f = await repo.create_foyer(session, "T")
+    caplog.set_level(logging.WARNING)
+    batch = Batch()
+    bad_ts = b'{"ts": "2026-13-45", "p_w": 1, "v": 228, "i_a": 1, "pf": 1, "e_kwh": 0}'
+    nan = b'{"ts": "2026-11-02T00:00:01Z", "p_w": NaN, "v": 228, "i_a": 1, "pf": 1, "e_kwh": 0}'
+    early = b'{"ts": "1970-01-01T00:00:05Z", "p_w": 1, "v": 228, "i_a": 1, "pf": 1, "e_kwh": 0}'
+    for p in (bad_ts, nan, early):
+        await handle_message(session, f"wattou/{f}/meter/state", p, batch)
+        await handle_message(session, f"wattou/{f}/meter/state", p)
+    await handle_message(session, f"wattou/{f}/meter/state", meter(), batch)
+    await batch.flush(session)
+    [s] = await repo.meter_samples(session, f, T0 - timedelta(1), T0 + timedelta(1))
+    assert s.p_w == 500.0
+    assert await repo.first_ts(session, f) == T0
+    assert caplog.text.count("ignoré") == 6

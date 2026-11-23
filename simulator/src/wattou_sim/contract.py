@@ -2,9 +2,12 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from datetime import UTC, datetime
+
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator
 
 PREFIX = "wattou"
+MIN_TS = datetime(2024, 1, 1, tzinfo=UTC)  # avant : horloge non synchronisée (NTP)
 
 
 def topic(foyer_id: str, device_id: str, leaf: str) -> str:
@@ -17,8 +20,20 @@ class Meta(BaseModel):
     essential: bool = False
 
 
-class MeterState(BaseModel):
-    ts: str
+class _State(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
+
+    ts: AwareDatetime
+
+    @field_validator("ts")
+    @classmethod
+    def _synced_clock(cls, v: datetime) -> datetime:
+        if v < MIN_TS:
+            raise ValueError("horodatage antérieur à 2024 (horloge non synchronisée)")
+        return v
+
+
+class MeterState(_State):
     p_w: float
     v: float
     i_a: float
@@ -26,14 +41,12 @@ class MeterState(BaseModel):
     e_kwh: float
 
 
-class PlugState(BaseModel):
-    ts: str
+class PlugState(_State):
     p_w: float
     on: bool
 
 
-class AcState(BaseModel):
-    ts: str
+class AcState(_State):
     mode: Literal["off", "cool", "fan"]
     setpoint_c: int
 

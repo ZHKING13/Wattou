@@ -76,11 +76,12 @@ async def handle_message(session: AsyncSession, topic: str, payload: bytes,
                 await repo.insert_plug(session, foyer_id, device_id, st)
             else:
                 batch.plug.append((foyer_id, device_id, st))
-            await repo.set_device_state(session, foyer_id, device_id, st.model_dump())
+            await repo.set_device_state(session, foyer_id, device_id, st.model_dump(mode="json"))
         elif leaf == "state" and "mode" in data:
-            await repo.set_device_state(session, foyer_id, device_id, AcState(**data).model_dump())
+            await repo.set_device_state(session, foyer_id, device_id,
+                                         AcState(**data).model_dump(mode="json"))
     except ValidationError as e:
-        log.warning("message ignoré (invalide): %s %s", topic, e.errors()[:1])
+        log.warning("message ignoré (invalide): %s %s", topic, e.errors(include_url=False)[:1])
 
 
 async def run_ingest(settings: Settings) -> None:
@@ -105,8 +106,13 @@ async def run_ingest(settings: Settings) -> None:
                     await handle_message(session, topic, payload, batch)
                     while not queue.empty() and len(batch) < 5000:
                         await handle_message(session, *queue.get_nowait(), batch)
-                    await batch.flush(session)
-                    await session.commit()
+                    try:
+                        await batch.flush(session)
+                        await session.commit()
+                    except Exception:  # un lot en échec ne doit pas arrêter l'ingestion
+                        log.exception("lot d'insertion en échec, ignoré")
+                        await session.rollback()
+                        batch = Batch()
         finally:
             task.cancel()
 
