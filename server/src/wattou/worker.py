@@ -3,7 +3,7 @@
 import asyncio
 import logging
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import timedelta
 from uuid import UUID, uuid4
 
 import aiomqtt
@@ -60,9 +60,7 @@ async def analyze_foyer(s: AsyncSession, pub: Publisher, notifier: Notifier, foy
         return
     last_ts, open_ = await repo.get_analysis_state(s, foyer_id)
     if last_ts is None:
-        first = await repo.meter_samples(s, foyer_id, datetime.min.replace(tzinfo=latest.tzinfo),
-                                         latest)
-        last_ts = first[0].ts - timedelta(seconds=1)
+        last_ts = await repo.first_ts(s, foyer_id) - timedelta(seconds=1)
     window_end = min(latest, last_ts + MAX_WINDOW)
     boundary = max(last_ts, window_end - timedelta(seconds=SETTLE_S))
     caught_up = window_end == latest

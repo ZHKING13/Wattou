@@ -46,3 +46,11 @@ async def test_upsert_device_and_views(session):
     await repo.set_device_state(session, f, "prise-frigo", {"on": True, "p_w": 120})
     [d] = await repo.device_views(session, f)
     assert (d.id, d.kind, d.essential, d.last_state["on"]) == ("prise-frigo", "plug", True, True)
+
+
+async def test_first_ts(session):
+    f = await repo.create_foyer(session, "Test")
+    assert await repo.first_ts(session, f) is None
+    for s in (5, 2, 9):
+        await repo.insert_meter(session, f, ms(T0 + timedelta(seconds=s)))
+    assert await repo.first_ts(session, f) == T0 + timedelta(seconds=2)

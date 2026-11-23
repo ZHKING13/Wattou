@@ -81,6 +81,11 @@ async def latest_ts(s: AsyncSession, foyer_id: UUID) -> datetime | None:
     return (await s.execute(select(func.max(r.ts)).where(r.foyer_id == foyer_id))).scalar_one()
 
 
+async def first_ts(s: AsyncSession, foyer_id: UUID) -> datetime | None:
+    r = m.meter_readings.c
+    return (await s.execute(select(func.min(r.ts)).where(r.foyer_id == foyer_id))).scalar_one()
+
+
 async def energy_by_bucket(s: AsyncSession, foyer_id: UUID, start: datetime, end: datetime,
                            step: str) -> list[tuple[datetime, float]]:
     """kWh par seau. Hypothèse : 1 mesure/s ; les trous ne comptent pas d'énergie."""
