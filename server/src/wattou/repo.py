@@ -9,7 +9,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from . import models as m
-from .analysis.types import DeviceView, Sample
+from .analysis.types import Activation, ApplianceSig, CreditEntry, DeviceView, Sample
 from .contract import Meta, MeterState, PlugState
 
 
@@ -99,3 +99,153 @@ async def add_alert(s: AsyncSession, foyer_id: UUID, ts: datetime, kind: str, me
         foyer_id=foyer_id, ts=ts, kind=kind, message=message, dedup_key=dedup_key)
         .on_conflict_do_nothing().returning(m.alerts.c.id))
     return res.scalar_one_or_none() is not None
+
+
+async def list_foyer_ids(s: AsyncSession) -> list[UUID]:
+    return list((await s.execute(select(m.foyers.c.id))).scalars())
+
+
+async def get_foyer(s: AsyncSession, foyer_id: UUID) -> dict | None:
+    row = (await s.execute(select(m.foyers).where(m.foyers.c.id == foyer_id))).mappings().first()
+    return dict(row) if row else None
+
+
+async def set_absence(s: AsyncSession, foyer_id: UUID, enabled: bool, since: datetime | None) -> None:
+    await s.execute(update(m.foyers).where(m.foyers.c.id == foyer_id).values(
+        absence_mode=enabled, absence_since=since if enabled else None))
+
+
+async def set_low_credit_days(s: AsyncSession, foyer_id: UUID, days: float) -> None:
+    await s.execute(update(m.foyers).where(m.foyers.c.id == foyer_id).values(low_credit_days=days))
+
+
+# --- énergie ---------------------------------------------------------------
+async def energy_between(s: AsyncSession, foyer_id: UUID, start: datetime, end: datetime) -> float:
+    r = m.meter_readings.c
+    q = select(func.coalesce(func.sum(r.p_w), 0.0)).where(
+        r.foyer_id == foyer_id, r.ts > start, r.ts <= end)
+    return float((await s.execute(q)).scalar_one()) / 3_600_000
+
+
+async def plug_energy(s: AsyncSession, foyer_id: UUID, start: datetime,
+                      end: datetime) -> dict[str, float]:
+    """kWh par prise ; les prises publient toutes les 10 s (et à chaque changement)."""
+    rows = await s.execute(text(
+        "SELECT device_id, sum(p_w * dt) / 3600000.0 FROM ("
+        "  SELECT device_id, p_w, LEAST(EXTRACT(EPOCH FROM (lead(ts) OVER w - ts)), 15) AS dt"
+        "  FROM plug_readings WHERE foyer_id = :f AND ts > :a AND ts <= :z"
+        "  WINDOW w AS (PARTITION BY device_id ORDER BY ts)) x "
+        "WHERE dt IS NOT NULL GROUP BY device_id"), {"f": foyer_id, "a": start, "z": end})
+    return {d: float(k) for d, k in rows}
+
+
+async def baseline_w(s: AsyncSession, foyer_id: UUID, end: datetime) -> float:
+    """Consommation de fond : 5e percentile de la puissance nocturne (00h-05h) des 3 derniers jours."""
+    v = (await s.execute(text(
+        "SELECT percentile_cont(0.05) WITHIN GROUP (ORDER BY p_w) FROM meter_readings "
+        "WHERE foyer_id = :f AND ts > :a AND ts <= :z AND extract(hour FROM ts) < 5"),
+        {"f": foyer_id, "a": end - timedelta(days=3), "z": end})).scalar_one()
+    return float(v or 0.0)
+
+
+# --- état d'analyse ----------------------------------------------------------
+def _act_to_json(a: Activation) -> dict:
+    return {"start": a.start.isoformat(), "end": a.end.isoformat() if a.end else None,
+            "delta_w": a.delta_w, "pf": a.pf}
+
+
+def _act_from_json(d: dict) -> Activation:
+    return Activation(_dt(d["start"]), _dt(d["end"]) if d["end"] else None, d["delta_w"], d["pf"])
+
+
+async def get_analysis_state(s: AsyncSession, foyer_id: UUID) -> tuple[datetime | None, list[Activation]]:
+    row = (await s.execute(select(m.analysis_state).where(
+        m.analysis_state.c.foyer_id == foyer_id))).first()
+    if row is None:
+        return None, []
+    return row.last_ts, [_act_from_json(d) for d in row.open_json]
+
+
+async def set_analysis_state(s: AsyncSession, foyer_id: UUID, last_ts: datetime,
+                             open_: list[Activation]) -> None:
+    data = [_act_to_json(a) for a in open_]
+    await s.execute(insert(m.analysis_state).values(foyer_id=foyer_id, last_ts=last_ts, open_json=data)
+                    .on_conflict_do_update(index_elements=["foyer_id"],
+                                           set_={"last_ts": last_ts, "open_json": data}))
+
+
+# --- appareils reconnus ------------------------------------------------------
+async def list_appliances(s: AsyncSession, foyer_id: UUID) -> list[ApplianceSig]:
+    rows = await s.execute(select(m.appliances).where(m.appliances.c.foyer_id == foyer_id)
+                           .order_by(m.appliances.c.delta_w.desc()))
+    return [ApplianceSig(r.id, r.label, r.delta_w, r.pf, r.n_obs, r.device_id, r.essential)
+            for r in rows]
+
+
+async def save_appliances(s: AsyncSession, foyer_id: UUID, sigs: list[ApplianceSig]) -> None:
+    for g in sigs:
+        vals = dict(label=g.label, delta_w=g.delta_w, pf=g.pf, n_obs=g.n_obs,
+                    device_id=g.device_id, essential=g.essential)
+        await s.execute(insert(m.appliances).values(id=g.id, foyer_id=foyer_id, **vals)
+                        .on_conflict_do_update(index_elements=["id"], set_=vals))
+
+
+async def update_appliance(s: AsyncSession, foyer_id: UUID, appliance_id: UUID, **vals) -> bool:
+    res = await s.execute(update(m.appliances).where(
+        m.appliances.c.id == appliance_id, m.appliances.c.foyer_id == foyer_id).values(**vals))
+    return res.rowcount > 0
+
+
+async def add_activations(s: AsyncSession, foyer_id: UUID,
+                          assigned: list[tuple[Activation, UUID]]) -> None:
+    if assigned:
+        await s.execute(m.activations.insert().values([
+            dict(foyer_id=foyer_id, appliance_id=sid, start_ts=a.start, end_ts=a.end,
+                 delta_w=a.delta_w) for a, sid in assigned]))
+
+
+async def activations_between(s: AsyncSession, foyer_id: UUID, start: datetime,
+                              end: datetime) -> list[tuple[Activation, UUID]]:
+    c = m.activations.c
+    rows = await s.execute(select(c.start_ts, c.end_ts, c.delta_w, c.appliance_id).where(
+        c.foyer_id == foyer_id, c.end_ts > start, c.start_ts < end).order_by(c.start_ts))
+    return [(Activation(a, b, d, 0.0), sid) for a, b, d, sid in rows]
+
+
+# --- crédit -------------------------------------------------------------------
+async def add_credit_entry(s: AsyncSession, foyer_id: UUID, ts: datetime, kind: str, kwh: float,
+                           amount_fcfa: int | None) -> None:
+    await s.execute(m.credit_entries.insert().values(
+        foyer_id=foyer_id, ts=ts, kind=kind, kwh=kwh, amount_fcfa=amount_fcfa))
+
+
+async def credit_entries(s: AsyncSession, foyer_id: UUID) -> list[CreditEntry]:
+    c = m.credit_entries.c
+    rows = await s.execute(select(c.ts, c.kind, c.kwh, c.amount_fcfa).where(
+        c.foyer_id == foyer_id).order_by(c.ts, c.id))
+    return [CreditEntry(*r) for r in rows]
+
+
+# --- alertes et notifications -------------------------------------------------
+async def list_alerts(s: AsyncSession, foyer_id: UUID, unread_only: bool = False) -> list[dict]:
+    q = select(m.alerts).where(m.alerts.c.foyer_id == foyer_id)
+    if unread_only:
+        q = q.where(m.alerts.c.read.is_(False))
+    rows = await s.execute(q.order_by(m.alerts.c.ts.desc(), m.alerts.c.id.desc()))
+    return [dict(r) for r in rows.mappings()]
+
+
+async def mark_alert_read(s: AsyncSession, foyer_id: UUID, alert_id: int) -> bool:
+    res = await s.execute(update(m.alerts).where(
+        m.alerts.c.id == alert_id, m.alerts.c.foyer_id == foyer_id).values(read=True))
+    return res.rowcount > 0
+
+
+async def add_push_token(s: AsyncSession, foyer_id: UUID, token: str) -> None:
+    await s.execute(insert(m.push_tokens).values(foyer_id=foyer_id, token=token)
+                    .on_conflict_do_nothing())
+
+
+async def push_tokens(s: AsyncSession, foyer_id: UUID) -> list[str]:
+    q = select(m.push_tokens.c.token).where(m.push_tokens.c.foyer_id == foyer_id)
+    return list((await s.execute(q)).scalars())

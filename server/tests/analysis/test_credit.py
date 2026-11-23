@@ -1,7 +1,11 @@
 from datetime import date, datetime, timedelta, timezone
 
 from wattou.analysis.credit import (
-    depletion, forecast_daily_kwh, price_per_kwh, remaining_kwh, validate_reading,
+    depletion,
+    forecast_daily_kwh,
+    price_per_kwh,
+    remaining_kwh,
+    validate_reading,
 )
 from wattou.analysis.types import CreditEntry
 

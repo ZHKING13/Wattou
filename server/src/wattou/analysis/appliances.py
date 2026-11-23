@@ -19,7 +19,8 @@ def assign(activations: list[Activation], sigs: list[ApplianceSig], tol: float =
             if s.delta_w <= 0:
                 continue
             err = abs(a.delta_w - s.delta_w) / s.delta_w
-            if err <= tol and abs(a.pf - s.pf) <= pf_tol and (best_err is None or err < best_err):
+            pf_ok = s.device_id is not None or abs(a.pf - s.pf) <= pf_tol
+            if err <= tol and pf_ok and (best_err is None or err < best_err):
                 best, best_err = s, err
         if best is None:
             best = ApplianceSig(uuid4(), None, a.delta_w, a.pf, 0)

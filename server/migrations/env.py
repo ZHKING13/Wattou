@@ -1,9 +1,9 @@
 import asyncio
+import os
 
 from alembic import context
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from wattou.config import get_settings
 from wattou.models import metadata
 
 
@@ -14,7 +14,7 @@ def do_run(connection):
 
 
 async def main():
-    engine = create_async_engine(get_settings().database_url)
+    engine = create_async_engine(os.environ["WATTOU_DATABASE_URL"])
     async with engine.connect() as conn:
         await conn.run_sync(do_run)
         await conn.commit()

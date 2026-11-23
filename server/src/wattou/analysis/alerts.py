@@ -56,7 +56,7 @@ def check_stuck(open_activations: list[Activation], sigs: list[ApplianceSig],
 def check_outage(samples: list[Sample], max_gap_s: int = 120) -> list[Alert]:
     segs = segments(samples, max_gap_s)
     out = []
-    for prev, nxt in zip(segs, segs[1:]):
+    for prev, nxt in zip(segs, segs[1:], strict=False):
         a, b = prev[-1].ts, nxt[0].ts
         minutes = round((b - a).total_seconds() / 60)
         out.append(Alert("outage", b,

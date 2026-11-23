@@ -23,6 +23,7 @@ foyers = Table(
     Column("id", UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()),
     Column("name", Text, nullable=False),
     Column("absence_mode", Boolean, nullable=False, server_default="false"),
+    Column("absence_since", TS),
     Column("low_credit_days", Float, nullable=False, server_default="2"),
     Column("created_at", TS, nullable=False, server_default=func.now()),
 )

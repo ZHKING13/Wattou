@@ -18,15 +18,20 @@ def _known(a: Activation, sigs: list[ApplianceSig], tol: float = 0.15) -> bool:
                and abs(a.delta_w - s.delta_w) / s.delta_w <= tol for s in sigs)
 
 
-def check_absence(samples: list[Sample], open_activations: list[Activation],
+def check_absence(samples: list[Sample], activations: list[Activation],
                   sigs: list[ApplianceSig], baseline_w: float, absence: bool) -> Alert | None:
-    """En mode absence : ≥ 300 W inexpliqués en continu pendant 10 min -> alerte."""
+    """En mode absence : ≥ 300 W inexpliqués en continu pendant 10 min -> alerte.
+
+    `activations` : ouvertes et fermées couvrant la fenêtre ; seules celles d'appareils connus
+    expliquent la consommation.
+    """
     if not absence:
         return None
-    known = [a for a in open_activations if _known(a, sigs)]
+    known = [a for a in activations if _known(a, sigs)]
     run_start, run_vals = None, []
     for s in samples:
-        explained = baseline_w + sum(a.delta_w for a in known if a.start <= s.ts)
+        explained = baseline_w + sum(a.delta_w for a in known
+                                     if a.start <= s.ts and (a.end is None or s.ts < a.end))
         extra = s.p_w - explained
         if extra >= ABSENCE_MIN_W:
             if run_start is None:
@@ -52,7 +57,7 @@ def check_meter_gap(entries: list[CreditEntry],
     if len(readings) < 3:
         return None
     gaps = []
-    for prev, cur in zip(readings, readings[1:]):
+    for prev, cur in zip(readings, readings[1:], strict=False):
         recharged = sum(e.kwh for e in entries
                         if e.kind == "recharge" and prev.ts < e.ts <= cur.ts)
         counted = prev.kwh + recharged - cur.kwh

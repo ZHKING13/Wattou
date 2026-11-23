@@ -1,7 +1,13 @@
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
-from wattou.analysis.alerts import check_credit, check_outage, check_peak, check_stuck, check_voltage
+from wattou.analysis.alerts import (
+    check_credit,
+    check_outage,
+    check_peak,
+    check_stuck,
+    check_voltage,
+)
 from wattou.analysis.types import Activation, ApplianceSig, Sample
 
 T0 = datetime(2026, 11, 2, 12, tzinfo=timezone.utc)
