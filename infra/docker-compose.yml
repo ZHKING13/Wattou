@@ -22,3 +22,27 @@ services:
       test: ["CMD-SHELL", "mosquitto_sub -u server -P server -t '$$SYS/#' -C 1 -W 3"]
       interval: 3s
       retries: 20
+  api:
+    build: ../server
+    profiles: ["app"]
+    environment: &server_env
+      WATTOU_DATABASE_URL: postgresql+asyncpg://wattou:wattou@db:5432/wattou
+      WATTOU_MQTT_HOST: mqtt
+      WATTOU_JWT_SECRET: ${WATTOU_JWT_SECRET:-change-me-change-me-change-me-change-me}
+      TARIF_FCFA_KWH_DEFAUT: ${TARIF_FCFA_KWH_DEFAUT:-110}
+    ports: ["8000:8000"]
+    depends_on:
+      db: {condition: service_healthy}
+      mqtt: {condition: service_healthy}
+  ingest:
+    build: ../server
+    profiles: ["app"]
+    command: ["python", "-m", "wattou.ingest"]
+    environment: *server_env
+    depends_on: [api]
+  worker:
+    build: ../server
+    profiles: ["app"]
+    command: ["python", "-m", "wattou.worker"]
+    environment: *server_env
+    depends_on: [api]

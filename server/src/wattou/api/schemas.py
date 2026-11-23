@@ -38,6 +38,7 @@ class Summary(BaseModel):
 class ApplianceOut(BaseModel):
     id: str
     label: str | None
+    power_w: float | None = None
     kwh: float
     fcfa: float
     share: float

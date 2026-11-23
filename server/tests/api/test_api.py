@@ -104,6 +104,10 @@ async def test_rename_appliance(client, session):
     r = await client.patch(f"/appliances/{sig.id}", headers=h, json={"label": "Clim"})
     assert r.status_code == 200
     assert (await repo.list_appliances(session, UUID(f)))[0].label == "Clim"
+    await feed(session, UUID(f), 1, 100)
+    items = (await client.get("/foyer/appliances", headers=h)).json()
+    clim = next(i for i in items if i["id"] == str(sig.id))
+    assert clim["label"] == "Clim" and clim["power_w"] == 1100
 
 
 async def test_command_published(client, session, pub):

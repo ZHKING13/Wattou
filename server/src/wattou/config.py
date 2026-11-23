@@ -17,6 +17,7 @@ class Settings(BaseSettings):
         default=110.0, validation_alias=AliasChoices("TARIF_FCFA_KWH_DEFAUT")
     )
     expo_push_enabled: bool = False
+    worker_interval_s: float = 60
 
 
 @lru_cache

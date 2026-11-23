@@ -12,6 +12,7 @@ def test_settings_from_env(monkeypatch):
     assert s.mqtt_port == 1883
     assert s.jwt_secret == "s3cret"
     assert s.tarif_fcfa_kwh_defaut == 110.0
+    assert s.worker_interval_s == 60
 
 
 def test_tarif_override(monkeypatch):

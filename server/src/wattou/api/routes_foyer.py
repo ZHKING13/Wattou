@@ -78,12 +78,15 @@ async def appliances(period: Literal["day", "week", "month"] = "day",
     shown = {str(g.id): g for g in visible(sigs)}
     hidden = sum(v for k, v in parts.items() if k not in shown and k not in ("fond", "autres"))
     parts["autres"] = parts.get("autres", 0.0) + hidden
+    for key in shown:
+        parts.setdefault(key, 0.0)  # un appareil nommé reste listé, même à 0 kWh
     for key, kwh in parts.items():
         g = shown.get(key)
         if g is None and key not in ("fond", "autres"):
             continue
         label = g.label if g else {"fond": "Consommation de fond", "autres": "Autres"}[key]
-        out.append(ApplianceOut(id=key, label=label, kwh=kwh, fcfa=round(kwh * price),
+        power = round(g.delta_w) if g else None
+        out.append(ApplianceOut(id=key, label=label, power_w=power, kwh=kwh, fcfa=round(kwh * price),
                                 share=kwh / total if total else 0.0,
                                 essential=bool(g and g.essential),
                                 device_id=g.device_id if g else None))
