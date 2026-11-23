@@ -142,3 +142,20 @@ async def test_push_token(client, session):
     r = await client.post("/push-tokens", headers=h, json={"token": "ExponentPushToken[x]"})
     assert r.status_code == 201
     assert await repo.push_tokens(session, UUID(f)) == ["ExponentPushToken[x]"]
+
+
+async def test_appliance_running_now_counted(client, session):
+    from datetime import timedelta
+    from uuid import uuid4
+
+    from wattou.analysis.types import Activation, ApplianceSig
+
+    h, f = await register(client)
+    sig = ApplianceSig(uuid4(), "Clim", 1100, 0.9, 10)
+    await repo.save_appliances(session, UUID(f), [sig])
+    await feed(session, UUID(f), 60, 1150)
+    running = Activation(T0 + timedelta(minutes=30), None, 1100, 0.9)
+    await repo.set_analysis_state(session, UUID(f), T0 + timedelta(minutes=59), [running])
+    items = (await client.get("/foyer/appliances?period=day", headers=h)).json()
+    clim = next(i for i in items if i["label"] == "Clim")
+    assert abs(clim["kwh"] - 0.55) < 0.01

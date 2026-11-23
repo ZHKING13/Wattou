@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from typing import Literal
 from uuid import UUID
@@ -6,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .. import repo
-from ..analysis.appliances import attribute_totals, visible
+from ..analysis.appliances import assign, attribute_totals, visible
 from ..analysis.credit import validate_reading
 from ..config import get_settings
 from ..credit_service import credit_status
@@ -70,8 +71,13 @@ async def appliances(period: Literal["day", "week", "month"] = "day",
     total = await repo.energy_between(s, foyer, start, now)
     hours = len(await repo.energy_by_bucket(s, foyer, start, now, "minute")) / 60
     sigs = await repo.list_appliances(s, foyer)
+    # appareils allumés en ce moment : activations encore ouvertes, rattachées au signal le plus proche
+    _, open_ = await repo.get_analysis_state(s, foyer)
+    running, _ = assign([replace(a, end=None) for a in open_], sigs)
+    known_ids = {g.id for g in sigs}
+    running = [(a, sid) for a, sid in running if sid in known_ids]
     parts = attribute_totals(total, hours, await repo.baseline_w(s, foyer, now),
-                             await repo.activations_between(s, foyer, start, now), sigs,
+                             await repo.activations_between(s, foyer, start, now) + running, sigs,
                              await repo.plug_energy(s, foyer, start, now), start, now)
     price = (await credit_status(s, foyer, now, get_settings().tarif_fcfa_kwh_defaut)).price_fcfa_kwh
     out = []
