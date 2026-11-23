@@ -2,10 +2,9 @@
 
 from collections.abc import Callable
 from datetime import datetime, timedelta
-from statistics import median
 from uuid import UUID
 
-from .types import Activation, Alert, ApplianceSig, CreditEntry, Sample
+from .types import Activation, Alert, ApplianceSig, CreditEntry
 
 ABSENCE_MIN_W = 300
 ABSENCE_RUN_S = 600
@@ -18,34 +17,26 @@ def _known(a: Activation, sigs: list[ApplianceSig], tol: float = 0.15) -> bool:
                and abs(a.delta_w - s.delta_w) / s.delta_w <= tol for s in sigs)
 
 
-def check_absence(samples: list[Sample], activations: list[Activation],
-                  sigs: list[ApplianceSig], baseline_w: float, absence: bool) -> Alert | None:
-    """En mode absence : ≥ 300 W inexpliqués en continu pendant 10 min -> alerte.
+def check_absence(activations: list[Activation], sigs: list[ApplianceSig],
+                  absence_since: datetime | None, now: datetime) -> Alert | None:
+    """En mode absence : une charge inconnue ≥ 300 W allumée après le départ et restée
+    allumée 10 min -> alerte (horodatée à début + 10 min).
 
-    `activations` : ouvertes et fermées couvrant la fenêtre ; seules celles d'appareils connus
-    expliquent la consommation.
+    Fondé sur les paliers plutôt que sur la consommation de fond : celle-ci inclut déjà les
+    appareils qui tournent toute la nuit, ce qui masquait la charge du voisin.
     """
-    if not absence:
+    if absence_since is None:
         return None
-    known = [a for a in activations if _known(a, sigs)]
-    run_start, run_vals = None, []
-    for s in samples:
-        explained = baseline_w + sum(a.delta_w for a in known
-                                     if a.start <= s.ts and (a.end is None or s.ts < a.end))
-        extra = s.p_w - explained
-        if extra >= ABSENCE_MIN_W:
-            if run_start is None:
-                run_start, run_vals = s.ts, []
-            run_vals.append(extra)
-            if (s.ts - run_start).total_seconds() >= ABSENCE_RUN_S:
-                w = round(median(run_vals))
-                return Alert(
-                    "absence_load", s.ts,
-                    f"Consommation de {w} W détectée alors que vous êtes absent. Un appareil ou "
-                    "un branchement inconnu consomme sur votre compteur.",
-                    f"absence_load:{run_start.date().isoformat()}")
-        else:
-            run_start = None
+    for a in sorted(activations, key=lambda x: x.start):
+        if a.delta_w < ABSENCE_MIN_W or a.start < absence_since or _known(a, sigs):
+            continue
+        alert_at = a.start + timedelta(seconds=ABSENCE_RUN_S)
+        if (a.end or now) >= alert_at and now >= alert_at:
+            return Alert(
+                "absence_load", alert_at,
+                f"Consommation de {round(a.delta_w)} W détectée alors que vous êtes absent. Un "
+                "appareil ou un branchement inconnu consomme sur votre compteur.",
+                f"absence_load:{a.start.date().isoformat()}")
     return None
 
 

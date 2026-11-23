@@ -83,19 +83,15 @@ async def analyze_foyer(s: AsyncSession, pub: Publisher, notifier: Notifier, foy
         found.append(v)
     found += al.check_stuck(open_, sigs, window_end)
     if foyer["absence_mode"] and foyer["absence_since"]:
-        recent = [x for x in samples if x.ts >= foyer["absence_since"]]
-        known_acts = []
-        by_id = {g.id: g for g in sigs}
-        for a, sid in await repo.activations_between(
-                s, foyer_id, last_ts - timedelta(seconds=CONTEXT_S), window_end):
-            g = by_id.get(sid)
-            if g:
-                a.pf = g.pf
-            known_acts.append(a)
-        acts = known_acts + open_
-        baseline = await repo.baseline_w(s, foyer_id, window_end)
-        if (a := fraud.check_absence(recent, acts, sigs, baseline, True)):
+        recent = [a for a, _ in await repo.activations_between(
+            s, foyer_id, last_ts - timedelta(seconds=CONTEXT_S), window_end)]
+        if (a := fraud.check_absence(recent + open_, sigs, foyer["absence_since"], window_end)):
             found.append(a)
+    for d in await repo.device_views(s, foyer_id):
+        if d.kind == "plug" and d.essential and any(k in d.id for k in al.STUCK_LABELS):
+            series = await repo.plug_series(s, foyer_id, d.id,
+                                            window_end - timedelta(hours=al.STUCK_H, minutes=1), window_end)
+            found += al.check_plug_stuck(d.id, d.id, series, window_end)
     if caught_up:
         entries = await repo.credit_entries(s, foyer_id)
 

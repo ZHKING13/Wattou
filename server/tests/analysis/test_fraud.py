@@ -2,38 +2,49 @@ from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from wattou.analysis.fraud import check_absence, check_meter_gap, check_night_unknown
-from wattou.analysis.types import Activation, ApplianceSig, CreditEntry, Sample
+from wattou.analysis.types import Activation, ApplianceSig, CreditEntry
 
 T0 = datetime(2026, 11, 2, 2, tzinfo=timezone.utc)
 FRIDGE = ApplianceSig(uuid4(), "frigo", 120, 0.8, 50, essential=True)
 
 
-def samples(minutes, p, start=T0):
-    return [Sample(start + timedelta(seconds=s), p) for s in range(minutes * 60)]
+NOW = T0 + timedelta(minutes=20)
 
 
 def test_absence_tap_detected_within_15_min():
-    s = samples(5, 30) + samples(15, 430, start=T0 + timedelta(minutes=5))
-    opened = [Activation(T0 + timedelta(minutes=5), None, 400, 0.9)]
-    alert = check_absence(s, opened, [FRIDGE], baseline_w=30, absence=True)
+    tap = Activation(T0 + timedelta(minutes=5), None, 400, 0.9)
+    alert = check_absence([tap], [FRIDGE], absence_since=T0, now=NOW)
     assert alert is not None and alert.kind == "absence_load"
     assert alert.ts == T0 + timedelta(minutes=15)
     assert "400 W" in alert.message
 
 
+def test_absence_not_yet_ten_minutes():
+    tap = Activation(T0 + timedelta(minutes=5), None, 400, 0.9)
+    assert check_absence([tap], [FRIDGE], absence_since=T0, now=T0 + timedelta(minutes=14)) is None
+
+
 def test_absence_short_load_ignored():
-    s = samples(5, 30) + samples(8, 430, start=T0 + timedelta(minutes=5))
-    assert check_absence(s, [], [FRIDGE], baseline_w=30, absence=True) is None
+    short = Activation(T0 + timedelta(minutes=5), T0 + timedelta(minutes=13), 400, 0.9)
+    assert check_absence([short], [FRIDGE], absence_since=T0, now=NOW) is None
 
 
-def test_absence_fridge_not_flagged():
-    s = samples(20, 150)
-    opened = [Activation(T0 - timedelta(minutes=1), None, 120, 0.8)]
-    assert check_absence(s, opened, [FRIDGE], baseline_w=30, absence=True) is None
+def test_absence_known_or_small_loads_not_flagged():
+    fridge = Activation(T0 - timedelta(minutes=1), None, 120, 0.8)
+    clim = Activation(T0, None, 1100, 0.9)
+    sigs = [FRIDGE, ApplianceSig(uuid4(), "Clim", 1100, 0.9, 20)]
+    small = Activation(T0, None, 200, 0.9)
+    assert check_absence([fridge, clim, small], sigs, absence_since=T0, now=NOW) is None
+
+
+def test_absence_ignores_loads_started_before_leaving():
+    before = Activation(T0 - timedelta(minutes=30), None, 400, 0.9)
+    assert check_absence([before], [FRIDGE], absence_since=T0, now=NOW) is None
 
 
 def test_no_alert_when_present():
-    assert check_absence(samples(20, 430), [], [FRIDGE], baseline_w=30, absence=False) is None
+    tap = Activation(T0 + timedelta(minutes=5), None, 400, 0.9)
+    assert check_absence([tap], [FRIDGE], absence_since=None, now=NOW) is None
 
 
 def entries(*readings, recharge_at=None):

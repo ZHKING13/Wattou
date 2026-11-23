@@ -5,6 +5,7 @@ from wattou.analysis.alerts import (
     check_credit,
     check_outage,
     check_peak,
+    check_plug_stuck,
     check_stuck,
     check_voltage,
 )
@@ -54,3 +55,18 @@ def test_check_voltage():
     a = check_voltage(ok + low)
     assert a is not None and a.kind == "voltage" and "170 V" in a.message
     assert check_voltage(ok + low[:5]) is None
+
+
+def test_check_stuck_ignores_plug_backed_appliances():
+    plug_fridge = ApplianceSig(uuid4(), "prise-frigo", 120, 0.8, 30, device_id="prise-frigo", essential=True)
+    opened = [Activation(T0 - timedelta(hours=9), None, 120, 0.95)]
+    assert check_stuck(opened, [plug_fridge], T0) == []
+
+
+def test_check_plug_stuck():
+    readings = [(T0 - timedelta(hours=3) + timedelta(seconds=10 * i), 120.0) for i in range(1081)]
+    [a] = check_plug_stuck("prise-frigo", "Prise frigo", readings, T0)
+    assert a.kind == "stuck" and "Prise frigo" in a.message
+    cycling = [(t, 0.0 if i % 200 < 80 else 120.0) for i, (t, _) in enumerate(readings)]
+    assert check_plug_stuck("prise-frigo", "Prise frigo", cycling, T0) == []
+    assert check_plug_stuck("prise-frigo", "Prise frigo", readings[-100:], T0) == []

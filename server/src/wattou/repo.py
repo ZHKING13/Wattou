@@ -277,3 +277,11 @@ async def list_devices(s: AsyncSession, foyer_id: UUID) -> list[dict]:
 async def set_schedule(s: AsyncSession, foyer_id: UUID, device_id: str, schedule: dict) -> None:
     await s.execute(update(m.devices).where(m.devices.c.foyer_id == foyer_id,
                                             m.devices.c.id == device_id).values(schedule=schedule))
+
+
+async def plug_series(s: AsyncSession, foyer_id: UUID, device_id: str, start: datetime,
+                      end: datetime) -> list[tuple[datetime, float]]:
+    c = m.plug_readings.c
+    rows = await s.execute(select(c.ts, c.p_w).where(
+        c.foyer_id == foyer_id, c.device_id == device_id, c.ts > start, c.ts <= end).order_by(c.ts))
+    return [(t, p) for t, p in rows]

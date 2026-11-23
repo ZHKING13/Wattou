@@ -1,6 +1,6 @@
 """Alertes hors fraude : crédit, pic, appareil bloqué, coupure, tension."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from .steps import segments
 from .types import Activation, Alert, ApplianceSig, Sample
@@ -39,7 +39,9 @@ def check_peak(hourly_today: list[float], hourly_7d_avg: list[float], now: datet
 def check_stuck(open_activations: list[Activation], sigs: list[ApplianceSig],
                 now: datetime) -> list[Alert]:
     out = []
-    watched = [s for s in sigs if s.label and any(k in s.label.lower() for k in STUCK_LABELS)]
+    # les appareils sur prise connectée sont surveillés par check_plug_stuck (mesure directe)
+    watched = [s for s in sigs if s.label and not s.device_id
+               and any(k in s.label.lower() for k in STUCK_LABELS)]
     for a in open_activations:
         if (now - a.start).total_seconds() < STUCK_H * 3600:
             continue
@@ -51,6 +53,19 @@ def check_stuck(open_activations: list[Activation], sigs: list[ApplianceSig],
                                  f"stuck:{s.id}:{a.start.isoformat()}"))
                 break
     return out
+
+
+def check_plug_stuck(device_id: str, name: str, readings: list[tuple[datetime, float]],
+                     now: datetime) -> list[Alert]:
+    """Frigo/congélateur sur prise : consomme sans interruption depuis 3 h -> alerte."""
+    since = now - timedelta(hours=STUCK_H)
+    window = [(t, w) for t, w in readings if t >= since]
+    covered = window and (window[0][0] - since).total_seconds() <= 60
+    if not covered or min(w for _, w in window) <= 5:
+        return []
+    return [Alert("stuck", now,
+                  f"Votre {name} ne s'arrête plus depuis {STUCK_H} h : il est peut-être en panne.",
+                  f"stuck:{device_id}:{now.date().isoformat()}")]
 
 
 def check_outage(samples: list[Sample], max_gap_s: int = 120) -> list[Alert]:

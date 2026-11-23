@@ -92,3 +92,23 @@ async def test_no_peak_alert_without_history(session):
     await insert_profile(session, f, [(60, 50), (60, 1500), (30, 50)], start=T0.replace(hour=1))
     await analyze_foyer(session, Pub(), LogNotifier(), f)
     assert [a["kind"] for a in await repo.list_alerts(session, f) if a["kind"] == "peak"] == []
+
+
+async def test_absence_tap_alert(session):
+    f = await repo.create_foyer(session, "T")
+    await repo.set_absence(session, f, True, T0)
+    await insert_profile(session, f, [(20, 50), (30, 450)])
+    await analyze_foyer(session, Pub(), LogNotifier(), f)
+    [a] = [a for a in await repo.list_alerts(session, f) if a["kind"] == "absence_load"]
+    assert a["ts"] == T0 + timedelta(minutes=30)
+
+
+async def test_plug_fridge_stuck_alert(session):
+    f = await repo.create_foyer(session, "T")
+    await repo.upsert_device(session, f, "prise-frigo", Meta(kind="plug", name="Prise frigo", essential=True))
+    for i in range(1100):
+        t = T0 + timedelta(seconds=10 * i)
+        await repo.insert_plug(session, f, "prise-frigo", PlugState(ts=t.isoformat(), p_w=120, on=True))
+    await insert_profile(session, f, [(185, 145)])
+    await analyze_foyer(session, Pub(), LogNotifier(), f)
+    assert [a["kind"] for a in await repo.list_alerts(session, f)] == ["stuck"]
