@@ -74,3 +74,21 @@ test('relevé refusé (422) : message du serveur sous le champ', async () => {
   await fireEvent.press(screen.getByRole('button', { name: 'Enregistrer' }));
   await screen.findByText('Ce relevé est plus élevé que le précédent sans recharge entre les deux.');
 });
+
+test('hors connexion avec un résumé en cache : pas de fausse alerte capteur', async () => {
+  const { HorsLigne } = require('../src/api/erreurs');
+  const { cacheMemoire } = require('./fakes');
+  const cache = cacheMemoire();
+  await cache.ecrire('f1:resume', { ...RESUME, data_until: '2026-11-24T13:59:50Z' }, '2026-11-24T14:00:00Z');
+  await renderRouter(routesApp(deps(fauxApi({ resume: async () => { throw new HorsLigne(); } }), undefined, { cache })),
+                     { initialUrl: '/' });
+  await screen.findByText('Données de 14 h 00 — hors connexion');
+  expect(screen.queryByText(/Le capteur n’envoie plus/)).toBeNull();
+});
+
+test('crédit saisi mais jours pas encore calculés : pas de nouvelle demande de saisie', async () => {
+  await ouvrir({ days_left: null, depletion_at: null });
+  await screen.findByText(`≈ 3${NNBSP}120 F restants`);
+  screen.getByText('Wattou calcule combien de jours il vous reste : il lui faut encore quelques heures de mesures.');
+  expect(screen.queryByText(/Saisissez le crédit/)).toBeNull();
+});

@@ -8,7 +8,7 @@ import { depuis } from '../format';
 import { useApi, useDeps } from '../session/SessionContext';
 import { espace, rayon, useCouleurs } from '../theme';
 import { Carte, Ecran, MessageErreur, Texte, Titre } from '../ui/base';
-import { BandeauEtat } from '../ui/Etat';
+import { EtatRessource } from '../ui/Etat';
 
 const DANGER: KindAlerte[] = ['absence_load', 'meter_gap', 'night_unknown'];
 const NEUTRE: KindAlerte[] = ['outage'];
@@ -77,15 +77,20 @@ export function Alertes() {
     void ressource.rafraichir();
   }, [ressource.rafraichir]));
   return (
-    <Ecran testID="ecran-alertes">
+    <Ecran testID="ecran-alertes" onRefresh={ressource.rafraichir}>
       <Titre>Alertes</Titre>
       <Absence />
-      <Texte doux accessibilityLabel={`${nonLues} alerte${nonLues > 1 ? 's' : ''} non lue${nonLues > 1 ? 's' : ''}`}>
-        {nonLues ? `${nonLues} non lue${nonLues > 1 ? 's' : ''}` : 'Tout est lu'}
-      </Texte>
-      <BandeauEtat etat={ressource.etat} le={ressource.le} />
-      {ressource.donnees !== null && alertes.length === 0 ? <Texte>Aucune alerte. Tout va bien.</Texte> : null}
-      {alertes.map((a) => <Ligne key={a.id} a={a} onLire={() => void marquerLue(a.id)} />)}
+      <EtatRessource ressource={ressource}>
+        {() => (
+          <View style={{ gap: espace.m }}>
+            <Texte doux accessibilityLabel={`${nonLues} alerte${nonLues > 1 ? 's' : ''} non lue${nonLues > 1 ? 's' : ''}`}>
+              {nonLues ? `${nonLues} non lue${nonLues > 1 ? 's' : ''}` : 'Tout est lu'}
+            </Texte>
+            {alertes.length === 0 ? <Texte>Aucune alerte. Tout va bien.</Texte> : null}
+            {alertes.map((a) => <Ligne key={a.id} a={a} onLire={() => void marquerLue(a.id)} />)}
+          </View>
+        )}
+      </EtatRessource>
     </Ecran>
   );
 }

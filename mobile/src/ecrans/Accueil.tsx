@@ -17,8 +17,14 @@ function CarteCredit({ r }: { r: Resume }) {
   const ton = bas ? 'alerte' : undefined;
   return (
     <Carte testID="carte-credit" ton={ton}>
-      {r.days_left === null || r.credit_kwh === null ? (
+      {r.credit_kwh === null ? (
         <Texte>Saisissez le crédit affiché par votre compteur pour voir combien de jours il vous reste.</Texte>
+      ) : r.days_left === null ? (
+        <>
+          <Texte doux>Crédit restant</Texte>
+          {r.credit_fcfa !== null ? <Texte gras>{`≈ ${fcfa(r.credit_fcfa)} restants`}</Texte> : null}
+          <Texte doux>Wattou calcule combien de jours il vous reste : il lui faut encore quelques heures de mesures.</Texte>
+        </>
       ) : (
         <>
           <Texte doux>Crédit restant</Texte>
@@ -44,8 +50,11 @@ export function Accueil() {
       <Titre>Wattou</Titre>
       <EtatRessource ressource={ressource}>
         {(r) => {
-          const muet = !r.data_until
-            || deps.maintenant().getTime() - new Date(r.data_until).getTime() > CAPTEUR_MUET_MS;
+          // capteur muet = la dernière mesure est vieille *au moment où le serveur a répondu* ;
+          // hors connexion, c'est le téléphone qui est coupé, pas le capteur.
+          const reference = ressource.le ? new Date(ressource.le) : deps.maintenant();
+          const muet = ressource.etat !== 'hors_ligne' && (!r.data_until
+            || reference.getTime() - new Date(r.data_until).getTime() > CAPTEUR_MUET_MS);
           return (
             <View style={{ gap: espace.l }}>
               {muet ? (

@@ -72,3 +72,10 @@ test('session expirée pendant l\'usage : retour à la connexion, jeton effacé'
   await screen.findByText('Se connecter');
   await waitFor(() => expect(stockage.valeur).toBeNull());
 });
+
+test('stockage sécurisé en panne : écran de connexion, pas d\'écran blanc', async () => {
+  const stockage = stockageMemoire(null);
+  stockage.lire = async () => { throw new Error('keystore'); };
+  await renderRouter(routesApp(deps(fauxApi(), stockage)), { initialUrl: '/' });
+  await screen.findByText('Se connecter');
+});

@@ -47,3 +47,13 @@ test('aucune alerte', async () => {
   await renderRouter(routesApp(deps(fauxApi({ alertes: async () => [], resume }))), { initialUrl: '/alertes' });
   await screen.findByText('Aucune alerte. Tout va bien.');
 });
+
+test('alertes impossibles à charger : message et Réessayer, jamais « Tout est lu »', async () => {
+  const { HorsLigne } = require('../src/api/erreurs');
+  await renderRouter(routesApp(deps(fauxApi({ alertes: async () => { throw new HorsLigne(); }, resume }))),
+                     { initialUrl: '/alertes' });
+  await screen.findByText('Pas de connexion internet.');
+  screen.getByRole('button', { name: 'Réessayer' });
+  expect(screen.queryByText('Tout est lu')).toBeNull();
+  expect(screen.queryByText('Aucune alerte. Tout va bien.')).toBeNull();
+});

@@ -52,11 +52,13 @@ export function FournisseurApp({ deps, children }: { deps: Dependances; children
   const jetonRef = useRef<string | null>(null);
 
   useEffect(() => {
-    deps.stockage.lire().then((j) => {
-      jetonRef.current = j?.token ?? null;
-      setJeton(j);
-      setEtat(j ? 'connecte' : 'deconnecte');
-    });
+    deps.stockage.lire()
+      .catch(() => null) // stockage sécurisé illisible (restauration de sauvegarde) : on se reconnecte
+      .then((j) => {
+        jetonRef.current = j?.token ?? null;
+        setJeton(j);
+        setEtat(j ? 'connecte' : 'deconnecte');
+      });
   }, [deps]);
 
   const deconnecter = useCallback(async () => {
