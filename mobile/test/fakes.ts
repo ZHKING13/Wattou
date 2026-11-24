@@ -27,5 +27,15 @@ export const MAINTENANT = new Date('2026-11-24T15:00:00Z');
 
 export function deps(api: Api, stockage = stockageMemoire({ token: 'j', foyer_id: 'f1' }),
                      extra: Partial<Dependances> = {}): Dependances {
-  return { creerApi: () => api, stockage, maintenant: () => MAINTENANT, ...extra } as Dependances;
+  return { creerApi: () => api, stockage, cache: cacheMemoire(), maintenant: () => MAINTENANT, ...extra } as Dependances;
+}
+
+export function cacheMemoire() {
+  const m = new Map<string, { valeur: unknown; le: string }>();
+  return {
+    m,
+    lire: async <T,>(cle: string) => (m.get(cle) as { valeur: T; le: string } | undefined) ?? null,
+    ecrire: async (cle: string, valeur: unknown, le = MAINTENANT.toISOString()) => { m.set(cle, { valeur, le }); },
+    vider: async () => { m.clear(); },
+  };
 }

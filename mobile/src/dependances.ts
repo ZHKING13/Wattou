@@ -1,11 +1,13 @@
 import Constants from 'expo-constants';
 import { type Api, creerApi } from './api/client';
+import { type Cache, cacheLocal } from './donnees/cache';
 import { type StockageJeton, stockageSecurise } from './session/stockage';
 
 /** Tout ce qui touche l'extérieur (réseau, stockage, horloge) : remplacé par des faux dans les tests. */
 export type Dependances = {
   creerApi: (jeton: () => Promise<string | null>) => Api;
   stockage: StockageJeton;
+  cache: Cache;
   maintenant: () => Date;
 };
 
@@ -14,5 +16,6 @@ const apiUrl = (Constants.expoConfig?.extra?.apiUrl as string | undefined) || 'h
 export const dependancesReelles: Dependances = {
   creerApi: (jeton) => creerApi({ baseUrl: apiUrl, jeton }),
   stockage: stockageSecurise,
+  cache: cacheLocal,
   maintenant: () => new Date(),
 };

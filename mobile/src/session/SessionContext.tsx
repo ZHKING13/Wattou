@@ -64,6 +64,7 @@ export function FournisseurApp({ deps, children }: { deps: Dependances; children
     setJeton(null);
     setEtat('deconnecte');
     await deps.stockage.effacer();
+    await deps.cache.vider();
   }, [deps]);
 
   const api = useMemo(
