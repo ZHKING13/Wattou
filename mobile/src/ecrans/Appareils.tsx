@@ -77,7 +77,7 @@ function Ligne({ a, onRenomme }: { a: Appareil; onRenomme: () => void }) {
     <Carte testID={`appareil-${a.id}`}>
       <Texte gras>{nomAppareil(a)}</Texte>
       <View style={{ height: 8, borderRadius: 4, backgroundColor: c.bordure }}>
-        <View style={{ height: 8, borderRadius: 4, width: `${Math.round(a.share * 100)}%`, backgroundColor: c.accent }} />
+        <View style={{ height: 8, borderRadius: 4, width: `${Math.round(a.share * 100)}%`, backgroundColor: c.accentVif }} />
       </View>
       <Texte>{`${fcfa(a.fcfa)} · ${Math.round(a.share * 100)} %`}</Texte>
       {!special ? <Pastille texte="Estimation" /> : null}

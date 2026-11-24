@@ -22,7 +22,7 @@ export function Ecran({ children, testID, defiler = true, onRefresh }: {
       {defiler ? (
         <ScrollView testID={testID ? `defilement-${testID}` : undefined} keyboardShouldPersistTaps="handled"
                     refreshControl={onRefresh
-                      ? <RefreshControl refreshing={tire} onRefresh={rafraichir} colors={[c.accent]} tintColor={c.accent} />
+                      ? <RefreshControl refreshing={tire} onRefresh={rafraichir} colors={[c.accentVif]} tintColor={c.accentVif} />
                       : undefined}>
           {contenu}
         </ScrollView>

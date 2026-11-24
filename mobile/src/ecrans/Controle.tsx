@@ -83,7 +83,7 @@ function Clim({ d }: { d: Dispositif }) {
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Texte gras couleur={c.surFort}>{d.name}</Texte>
         <Switch accessibilityRole="switch" accessibilityLabel={d.name} value={marche} disabled={envoi}
-                trackColor={{ true: c.accent, false: c.surFortDoux }} thumbColor={c.surFort}
+                trackColor={{ true: c.accentVif, false: c.surFortDoux }} thumbColor={c.surFort}
                 onValueChange={(v) => {
                   setMarche(v);
                   void envoyer({ mode: v ? 'cool' : 'off' }, () => setMarche(!v));
@@ -117,7 +117,7 @@ function Prise({ d }: { d: Dispositif }) {
         </View>
         {d.essential ? null : (
           <Switch accessibilityRole="switch" accessibilityLabel={d.name} value={on} disabled={envoi}
-                  trackColor={{ true: c.accent, false: c.bordure }} thumbColor={c.surface}
+                  trackColor={{ true: c.accentVif, false: c.bordure }} thumbColor={c.surface}
                   onValueChange={(v) => {
                     setOn(v);
                     void envoyer({ on: v }, () => setOn(!v));

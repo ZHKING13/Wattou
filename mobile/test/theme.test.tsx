@@ -26,12 +26,19 @@ test.each(['light', 'dark'] as const)('piste B lisible en mode %s (≥ 4,5:1)', 
   expect(contraste(c.accentSurFort, c.fort)).toBeGreaterThanOrEqual(4.5);
   expect(contraste(c.surSuccesFond, c.succesFond)).toBeGreaterThanOrEqual(4.5);
   expect(contraste(c.surAlerteFond, c.alerteFond)).toBeGreaterThanOrEqual(4.5);
-  expect(contraste(c.surAccent, c.accentSurFort)).toBeGreaterThanOrEqual(4.5);
+});
+
+test.each(['light', 'dark'] as const)('texte blanc sur le corail, lisible (%s)', (mode) => {
+  const c = couleursPour(mode);
+  expect(c.surAccent).toBe('#FFFFFF');
+  expect(contraste(c.surAccent, c.accent)).toBeGreaterThanOrEqual(4.5);
+  // pastille corail clair sur la carte nuit : texte bleu nuit
+  expect(contraste(c.fort, c.accentSurFort)).toBeGreaterThanOrEqual(4.5);
 });
 
 test('couleurs de la piste B', () => {
   const c = couleursPour('light');
-  expect([c.accent, c.texte, c.fond]).toEqual(['#FF6B35', '#1B2A41', '#FFF8F0']);
+  expect([c.accentVif, c.texte, c.fond]).toEqual(['#FF6B35', '#1B2A41', '#FFF8F0']);
   expect(polices.titre).toBe('Baloo2_800ExtraBold');
   expect(polices.texte).toBe('NunitoSans_400Regular');
 });

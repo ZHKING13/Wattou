@@ -44,7 +44,7 @@ function CarteCredit({ r }: { r: Resume }) {
           {r.depletion_at ? (
             <Texte couleur={c.surFortDoux}>{`Épuisement prévu ${date(r.depletion_at)} vers ${heure(r.depletion_at).split(' h')[0]} h`}</Texte>
           ) : null}
-          {bas ? <Pastille texte="Crédit bas : pensez à recharger" fond={c.accentSurFort} couleur={c.surAccent} /> : null}
+          {bas ? <Pastille texte="Crédit bas : pensez à recharger" fond={c.accentSurFort} couleur={c.fort} /> : null}
         </>
       )}
       <View style={{ marginTop: espace.s }}>
@@ -58,7 +58,7 @@ function Conseil({ texte }: { texte: string }) {
   const c = useCouleurs();
   return (
     <Carte ton="accent" style={{ flexDirection: 'row', alignItems: 'flex-start', gap: espace.m }}>
-      <Ampoule taille={44} fond={c.surFort} ampoule={c.accent} />
+      <Ampoule taille={44} fond={c.surFort} ampoule={c.accentVif} />
       <View style={{ flex: 1, gap: espace.xs }}>
         <Texte taille={police.petit} couleur={c.surAccent}>Conseil du jour</Texte>
         <Texte gras couleur={c.surAccent}>{texte}</Texte>
@@ -107,7 +107,7 @@ function QuiMange({ liste }: { liste: Appareil[] }) {
             <Texte gras>{`${Math.round(a.share * 100)} %`}</Texte>
           </View>
           <View style={{ height: 10, borderRadius: 5, backgroundColor: c.bordure }}>
-            <View style={{ height: 10, borderRadius: 5, width: `${Math.round(a.share * 100)}%`, backgroundColor: c.accent }} />
+            <View style={{ height: 10, borderRadius: 5, width: `${Math.round(a.share * 100)}%`, backgroundColor: c.accentVif }} />
           </View>
         </View>
       ))}

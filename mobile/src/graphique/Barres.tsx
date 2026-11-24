@@ -41,7 +41,7 @@ export function Barres({ points, step, prix }: { points: PointHistorique[]; step
         {points.map((p, i) => (
           <Rect key={p.ts} x={MARGE_G + i * larg + larg * 0.15} y={y(p.kwh)} width={larg * 0.7}
                 height={Math.max(0, zoneH - y(p.kwh))} rx={2}
-                fill={choix === i ? c.alerte : c.accent}
+                fill={choix === i ? c.alerte : c.accentVif}
                 accessibilityLabel={libelleBarre(p, step)} onPress={() => setChoix(i)} />
         ))}
         {points.map((p, i) => (i % Math.ceil(points.length / 6) === 0 ? (

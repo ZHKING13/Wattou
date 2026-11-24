@@ -14,13 +14,15 @@ L'ampoule souriante est le personnage des conseils.
 | Fond | Crème `#FFF8F0` | Nuit `#1B2A41` |
 | Surface | `#FFFFFF` | `#24364F` |
 | Texte | Nuit `#1B2A41` | Crème `#FFF8F0` |
-| Accent (remplissage) | Corail `#FF6B35` | `#FF8A5C` |
-| Texte sur accent | Nuit `#1B2A41` | Nuit `#1B2A41` |
+| Corail vif (barres, graphiques, ampoule — sans texte dessus) | `#FF6B35` | `#FF8A5C` |
+| Corail des surfaces avec texte (boutons, conseil, onglet actif) | `#CC4A1F` | `#CC4A1F` |
+| Texte sur le corail | Blanc `#FFFFFF` | Blanc `#FFFFFF` |
+| Carte nuit : fond / texte / chiffre | `#1B2A41` / `#FFF8F0` / `#FF8A5C` | `#0F1A2B` / `#FFF8F0` / `#FF8A5C` |
 | Accent en texte (liens, boutons secondaires) | `#C2410C` | `#FF9E78` |
 | Alerte / danger / succès | `#B45309` / `#C0262D` / `#1E7F52` | `#F5B041` / `#FF8A8E` / `#4CC985` |
 
 Tout texte respecte un contraste d'au moins 4,5:1 (vérifié par `mobile/test/theme.test.tsx`).
-Le texte sur le corail est en bleu nuit, jamais en blanc (contraste insuffisant).
+Le texte sur le corail est blanc : le corail des surfaces qui portent du texte est donc plus foncé (`#CC4A1F`, 4,6:1) que le corail vif de la marque (blanc sur `#FF6B35` = 2,9:1, illisible).
 
 ## Typographie
 
