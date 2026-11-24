@@ -89,3 +89,15 @@ test('programmer la clim : éteindre à 6 h en semaine', async () => {
     slots: [{ at: '06:00', days: [0, 1, 2, 3, 4], action: { mode: 'off' } }],
   }));
 });
+
+test('l\'état des prises suit le serveur après rafraîchissement (coupure par la règle)', async () => {
+  let liste = DISPOSITIFS;
+  const { act } = require('expo-router/testing-library');
+  await renderRouter(routesApp(deps(fauxApi({ dispositifs: async () => liste, resume }))), { initialUrl: '/controle' });
+  await screen.findByText('Clim salon');
+  expect(screen.getByRole('switch', { name: 'Prise fer à repasser' }).props.value).toBe(true);
+  liste = DISPOSITIFS.map((d) => (d.id === 'prise-fer' ? { ...d, last_state: { on: false, p_w: 0 } } : d));
+  const defil = screen.getByTestId('defilement-ecran-controle');
+  await act(async () => { await defil.props.refreshControl.props.onRefresh(); });
+  await waitFor(() => expect(screen.getByRole('switch', { name: 'Prise fer à repasser' }).props.value).toBe(false));
+});

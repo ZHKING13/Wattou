@@ -94,7 +94,7 @@ export function Appareils() {
   const [periode, setPeriode] = useState<Periode>('day');
   const ressource = useRessource<Appareil[]>(`appareils:${periode}`, () => api.appareils(periode));
   return (
-    <Ecran testID="ecran-appareils">
+    <Ecran testID="ecran-appareils" onRefresh={ressource.rafraichir}>
       <Titre>Où part votre argent</Titre>
       <Segments items={[['day', 'Aujourd’hui'], ['week', '7 jours'], ['month', '30 jours']]} actif={periode} onChange={setPeriode} />
       <EtatRessource ressource={ressource}>

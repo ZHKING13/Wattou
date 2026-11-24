@@ -18,7 +18,7 @@ export function Historique() {
   const resume = useRessource<Resume>('resume', () => api.resume());
   const prix = resume.donnees?.price_fcfa_kwh ?? 0;
   return (
-    <Ecran testID="ecran-historique">
+    <Ecran testID="ecran-historique" onRefresh={points.rafraichir}>
       <Titre>Historique</Titre>
       <Segments items={[['jour', 'Jour'], ['semaine', 'Semaine'], ['mois', 'Mois']]} actif={vue} onChange={setVue} />
       <EtatRessource ressource={points}>

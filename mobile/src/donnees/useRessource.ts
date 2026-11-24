@@ -1,4 +1,4 @@
-import { useIsFocused } from 'expo-router';
+import { useFocusEffect, useIsFocused } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ErreurServeur, HorsLigne } from '../api/erreurs';
 import { useDeps, useSession } from '../session/SessionContext';
@@ -28,10 +28,14 @@ export function useRessource<T>(cle: string, charger: () => Promise<T>,
   const recu = useRef(false);
   const chargerRef = useRef(charger);
   chargerRef.current = charger;
+  const cleRef = useRef(cleCache);
+  cleRef.current = cleCache;
 
   const rafraichir = useCallback(async () => {
+    const cle = cleCache;
     try {
       const v = await chargerRef.current();
+      if (cleRef.current !== cle) return; // réponse d'une ancienne période : ignorée
       const maintenant = deps.maintenant().toISOString();
       recu.current = true;
       aDesDonnees.current = true;
@@ -41,6 +45,7 @@ export function useRessource<T>(cle: string, charger: () => Promise<T>,
       setEtat('pret');
       await deps.cache.ecrire(cleCache, v, maintenant);
     } catch (e) {
+      if (cleRef.current !== cle) return;
       const reseau = e instanceof HorsLigne || e instanceof ErreurServeur;
       setErreur(e instanceof Error ? e.message : 'Une erreur est survenue.');
       setEtat(reseau && aDesDonnees.current ? 'hors_ligne' : 'erreur');
@@ -49,6 +54,13 @@ export function useRessource<T>(cle: string, charger: () => Promise<T>,
 
   useEffect(() => {
     let actif = true;
+    // nouvelle clé (autre période, autre vue) : on repart de zéro, jamais les chiffres d'une autre clé
+    recu.current = false;
+    aDesDonnees.current = false;
+    setDonnees(null);
+    setLe(null);
+    setErreur(null);
+    setEtat('chargement');
     (async () => {
       const c = await deps.cache.lire<T>(cleCache);
       if (actif && c && !recu.current) {
@@ -62,6 +74,13 @@ export function useRessource<T>(cle: string, charger: () => Promise<T>,
       actif = false;
     };
   }, [deps, cleCache, rafraichir]);
+
+  // revenir sur l'écran recharge (le premier affichage est déjà chargé ci-dessus)
+  const dejaAffiche = useRef(false);
+  useFocusEffect(useCallback(() => {
+    if (dejaAffiche.current) void rafraichir();
+    dejaAffiche.current = true;
+  }, [rafraichir]));
 
   useEffect(() => {
     if (!options.intervalleMs || !focus) return;

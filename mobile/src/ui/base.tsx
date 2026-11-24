@@ -1,14 +1,32 @@
-import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type ViewStyle } from 'react-native';
+import { type ReactNode, useState } from 'react';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { espace, police, rayon, TOUCHE_MIN, useCouleurs } from '../theme';
 
-export function Ecran({ children, testID, defiler = true }: { children: ReactNode; testID?: string; defiler?: boolean }) {
+export function Ecran({ children, testID, defiler = true, onRefresh }: {
+  children: ReactNode; testID?: string; defiler?: boolean; onRefresh?: () => Promise<void>;
+}) {
   const c = useCouleurs();
+  const [tire, setTire] = useState(false);
   const contenu = <View style={{ padding: espace.l, gap: espace.l }}>{children}</View>;
+  const rafraichir = async () => {
+    setTire(true);
+    try {
+      await onRefresh?.();
+    } finally {
+      setTire(false);
+    }
+  };
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.fond }} testID={testID}>
-      {defiler ? <ScrollView keyboardShouldPersistTaps="handled">{contenu}</ScrollView> : contenu}
+      {defiler ? (
+        <ScrollView testID={testID ? `defilement-${testID}` : undefined} keyboardShouldPersistTaps="handled"
+                    refreshControl={onRefresh
+                      ? <RefreshControl refreshing={tire} onRefresh={rafraichir} colors={[c.accent]} tintColor={c.accent} />
+                      : undefined}>
+          {contenu}
+        </ScrollView>
+      ) : contenu}
     </SafeAreaView>
   );
 }

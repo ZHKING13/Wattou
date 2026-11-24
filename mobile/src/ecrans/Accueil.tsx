@@ -40,7 +40,7 @@ export function Accueil() {
   const c = useCouleurs();
   const ressource = useRessource<Resume>('resume', () => api.resume(), { intervalleMs: 60_000 });
   return (
-    <Ecran testID="ecran-accueil">
+    <Ecran testID="ecran-accueil" onRefresh={ressource.rafraichir}>
       <Titre>Wattou</Titre>
       <EtatRessource ressource={ressource}>
         {(r) => {

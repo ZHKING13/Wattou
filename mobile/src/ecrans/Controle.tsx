@@ -16,16 +16,20 @@ const CONSIGNE_MAX = 30;
 function useCommande(id: string) {
   const api = useApi();
   const [erreur, setErreur] = useState<string | null>(null);
+  const [envoi, setEnvoi] = useState(false);
   async function envoyer(cmd: CommandePrise | CommandeClim, annuler: () => void) {
     setErreur(null);
+    setEnvoi(true);
     try {
       await api.commander(id, cmd);
     } catch (e) {
       annuler();
       setErreur(e instanceof Error ? e.message : 'Une erreur est survenue.');
+    } finally {
+      setEnvoi(false);
     }
   }
-  return { erreur, envoyer };
+  return { erreur, envoyer, envoi };
 }
 
 function BoutonRond({ libelle, signe, onPress, desactive }: {
@@ -59,7 +63,13 @@ function LienProgrammer({ d }: { d: Dispositif }) {
 function Clim({ d }: { d: Dispositif }) {
   const [marche, setMarche] = useState(d.last_state.mode !== undefined && d.last_state.mode !== 'off');
   const [consigne, setConsigne] = useState(d.last_state.setpoint_c ?? 26);
-  const { erreur, envoyer } = useCommande(d.id);
+  const { erreur, envoyer, envoi } = useCommande(d.id);
+  // l'état réel (programmation, règle crédit bas) remplace l'affichage, sauf pendant un envoi
+  useEffect(() => {
+    if (envoi) return;
+    setMarche(d.last_state.mode !== undefined && d.last_state.mode !== 'off');
+    if (d.last_state.setpoint_c !== undefined) setConsigne(d.last_state.setpoint_c);
+  }, [d.last_state.mode, d.last_state.setpoint_c]); 
   const changerConsigne = (delta: number) => {
     const avant = consigne;
     const apres = Math.min(CONSIGNE_MAX, Math.max(CONSIGNE_MIN, avant + delta));
@@ -70,7 +80,7 @@ function Clim({ d }: { d: Dispositif }) {
     <Carte testID={`dispositif-${d.id}`}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Texte gras>{d.name}</Texte>
-        <Switch accessibilityRole="switch" accessibilityLabel={d.name} value={marche}
+        <Switch accessibilityRole="switch" accessibilityLabel={d.name} value={marche} disabled={envoi}
                 onValueChange={(v) => {
                   setMarche(v);
                   void envoyer({ mode: v ? 'cool' : 'off' }, () => setMarche(!v));
@@ -90,7 +100,10 @@ function Clim({ d }: { d: Dispositif }) {
 
 function Prise({ d }: { d: Dispositif }) {
   const [on, setOn] = useState(Boolean(d.last_state.on));
-  const { erreur, envoyer } = useCommande(d.id);
+  const { erreur, envoyer, envoi } = useCommande(d.id);
+  useEffect(() => {
+    if (!envoi) setOn(Boolean(d.last_state.on));
+  }, [d.last_state.on]); 
   return (
     <Carte testID={`dispositif-${d.id}`}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -99,7 +112,7 @@ function Prise({ d }: { d: Dispositif }) {
           <Texte doux>{`${Math.round(d.last_state.p_w ?? 0)} W`}</Texte>
         </View>
         {d.essential ? null : (
-          <Switch accessibilityRole="switch" accessibilityLabel={d.name} value={on}
+          <Switch accessibilityRole="switch" accessibilityLabel={d.name} value={on} disabled={envoi}
                   onValueChange={(v) => {
                     setOn(v);
                     void envoyer({ on: v }, () => setOn(!v));
@@ -149,7 +162,7 @@ export function Controle() {
   const c = useCouleurs();
   const ressource = useRessource<Dispositif[]>('dispositifs', () => api.dispositifs());
   return (
-    <Ecran testID="ecran-controle">
+    <Ecran testID="ecran-controle" onRefresh={ressource.rafraichir}>
       <Titre>Contrôle</Titre>
       <EtatRessource ressource={ressource}>
         {(liste) => {
