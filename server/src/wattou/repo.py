@@ -44,7 +44,7 @@ async def set_device_state(s: AsyncSession, foyer_id: UUID, device_id: str, stat
 async def device_views(s: AsyncSession, foyer_id: UUID) -> list[DeviceView]:
     rows = await s.execute(select(m.devices).where(m.devices.c.foyer_id == foyer_id)
                            .order_by(m.devices.c.id))
-    return [DeviceView(r.id, r.kind, r.essential, dict(r.last_state)) for r in rows]
+    return [DeviceView(r.id, r.kind, r.essential, dict(r.last_state), r.name) for r in rows]
 
 
 # --- mesures ---------------------------------------------------------------

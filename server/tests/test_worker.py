@@ -111,7 +111,8 @@ async def test_plug_fridge_stuck_alert(session):
         await repo.insert_plug(session, f, "prise-frigo", PlugState(ts=t.isoformat(), p_w=120, on=True))
     await insert_profile(session, f, [(185, 145)])
     await analyze_foyer(session, Pub(), LogNotifier(), f)
-    assert [a["kind"] for a in await repo.list_alerts(session, f)] == ["stuck"]
+    [alerte] = await repo.list_alerts(session, f)
+    assert alerte["kind"] == "stuck" and "Prise frigo" in alerte["message"]
 
 
 async def test_outage_closes_open_activation(session):
@@ -128,7 +129,7 @@ async def test_outage_closes_open_activation(session):
 
 async def test_low_credit_rule_fires_once_and_tells_the_user(session):
     f = await repo.create_foyer(session, "T")
-    await repo.upsert_device(session, f, "prise-fer", Meta(kind="plug", name="prise-fer"))
+    await repo.upsert_device(session, f, "prise-fer", Meta(kind="plug", name="Prise fer à repasser"))
     state = PlugState(ts=T0.isoformat(), p_w=0, on=True).model_dump(mode="json")
     await repo.set_device_state(session, f, "prise-fer", state)
     await repo.add_credit_entry(session, f, T0, "reading", 1.0, None)
@@ -140,4 +141,5 @@ async def test_low_credit_rule_fires_once_and_tells_the_user(session):
     cmds = [t for t, _ in pub.sent if t.endswith("/prise-fer/cmd")]
     assert len(cmds) == 1
     [rule] = [a for a in await repo.list_alerts(session, f) if a["kind"] == "low_credit_rule"]
-    assert "prise-fer" in rule["message"]
+    assert "Prise fer à repasser" in rule["message"]
+    assert "prise-fer" not in rule["message"]

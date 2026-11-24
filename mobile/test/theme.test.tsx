@@ -24,6 +24,7 @@ test.each(['light', 'dark'] as const)('piste B lisible en mode %s (≥ 4,5:1)', 
   expect(contraste(c.surFort, c.fort)).toBeGreaterThanOrEqual(4.5);
   expect(contraste(c.surFortDoux, c.fort)).toBeGreaterThanOrEqual(4.5);
   expect(contraste(c.accentSurFort, c.fort)).toBeGreaterThanOrEqual(4.5);
+  expect(contraste(c.dangerSurFort, c.fort)).toBeGreaterThanOrEqual(4.5);
   expect(contraste(c.surSuccesFond, c.succesFond)).toBeGreaterThanOrEqual(4.5);
   expect(contraste(c.surAlerteFond, c.alerteFond)).toBeGreaterThanOrEqual(4.5);
 });
