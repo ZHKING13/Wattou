@@ -12,6 +12,7 @@ export default function Onglets() {
       <Tabs.Screen name="index" options={{ title: 'Accueil' }} />
       <Tabs.Screen name="appareils" options={{ title: 'Appareils' }} />
       <Tabs.Screen name="historique" options={{ title: 'Historique' }} />
+      <Tabs.Screen name="controle" options={{ title: 'Contrôle' }} />
     </Tabs>
   );
 }
