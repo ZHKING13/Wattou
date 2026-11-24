@@ -13,7 +13,7 @@ const DISPOSITIFS: Dispositif[] = [
   { id: 'prise-frigo', kind: 'plug', name: 'Prise frigo', essential: true, last_state: { on: true, p_w: 120 }, schedule: { slots: [] } },
 ];
 const resume = async (): Promise<Resume> => ({
-  power_w: 500, today_kwh: 5, today_fcfa: 600, price_fcfa_kwh: 120, credit_kwh: 40, credit_fcfa: 4800,
+  foyer_name: 'Chez Awa', power_w: 500, today_kwh: 5, today_fcfa: 600, price_fcfa_kwh: 120, credit_kwh: 40, credit_fcfa: 4800,
   days_left: 3, depletion_at: null, month_forecast_fcfa: 20000, absence_mode: false, low_credit_days: 2,
   data_until: '2026-11-24T14:59:59Z',
 });

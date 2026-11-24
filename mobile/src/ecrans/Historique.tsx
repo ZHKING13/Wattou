@@ -5,11 +5,15 @@ import { fcfa, kwh } from '../format';
 import { Barres } from '../graphique/Barres';
 import { completer, fenetre, type Vue } from '../graphique/echelle';
 import { useApi, useDeps } from '../session/SessionContext';
+import { police, useCouleurs } from '../theme';
 import { Carte, Ecran, Texte, Titre } from '../ui/base';
 import { EtatRessource } from '../ui/Etat';
 import { Segments } from '../ui/Segments';
 
+const TITRES = { jour: 'Aujourd’hui', semaine: 'Ces 7 jours', mois: 'Ces 30 jours' } as const;
+
 export function Historique() {
+  const c = useCouleurs();
   const api = useApi();
   const deps = useDeps();
   const [vue, setVue] = useState<Vue>('jour');
@@ -25,10 +29,16 @@ export function Historique() {
         {(pts) => {
           const total = pts.reduce((s, p) => s + p.kwh, 0);
           return (
-            <Carte>
-              <Texte gras>{`${kwh(total)} · ${fcfa(total * prix)}`}</Texte>
-              <Barres points={completer(pts, f)} step={f.step} prix={prix} />
-            </Carte>
+            <>
+              <Carte ton="fort">
+                <Texte couleur={c.surFortDoux}>{TITRES[vue]}</Texte>
+                <Texte taille={police.titre} couleur={c.accentSurFort}>{fcfa(total * prix)}</Texte>
+                <Texte couleur={c.surFort}>{`${kwh(total)} · ${fcfa(total * prix)}`}</Texte>
+              </Carte>
+              <Carte>
+                <Barres points={completer(pts, f)} step={f.step} prix={prix} />
+              </Carte>
+            </>
           );
         }}
       </EtatRessource>

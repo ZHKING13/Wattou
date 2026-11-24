@@ -29,6 +29,7 @@ async def test_summary_without_credit_returns_nulls(client, session):
     s = (await client.get("/foyer/summary", headers=h)).json()
     assert s["credit_kwh"] is None and s["days_left"] is None and s["credit_fcfa"] is None
     assert s["power_w"] == 600 and abs(s["today_kwh"] - 0.1) < 1e-6
+    assert s["foyer_name"] == "Chez moi"
     assert s["price_fcfa_kwh"] == 110
 
 

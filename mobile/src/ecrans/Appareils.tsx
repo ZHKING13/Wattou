@@ -77,7 +77,7 @@ function Ligne({ a, onRenomme }: { a: Appareil; onRenomme: () => void }) {
     <Carte testID={`appareil-${a.id}`}>
       <Texte gras>{nomAppareil(a)}</Texte>
       <View style={{ height: 8, borderRadius: 4, backgroundColor: c.bordure }}>
-        <View style={{ height: 8, borderRadius: 4, width: `${Math.round(a.share * 100)}%`, backgroundColor: c.accent }} />
+        <View style={{ height: 8, borderRadius: 4, width: `${Math.round(a.share * 100)}%`, backgroundColor: c.accentVif }} />
       </View>
       <Texte>{`${fcfa(a.fcfa)} · ${Math.round(a.share * 100)} %`}</Texte>
       {!special ? <Pastille texte="Estimation" /> : null}
@@ -85,6 +85,20 @@ function Ligne({ a, onRenomme }: { a: Appareil; onRenomme: () => void }) {
         <Bouton titre="Nommer" onPress={() => setNommer(true)} secondaire />
       ) : null}
       {nommer ? <Nommer appareil={a} onFini={() => { setNommer(false); onRenomme(); }} /> : null}
+    </Carte>
+  );
+}
+
+const LIBELLE_PERIODE: Record<Periode, string> = { day: 'Aujourd’hui', week: 'Ces 7 jours', month: 'Ces 30 jours' };
+
+function TotalPeriode({ liste, periode }: { liste: Appareil[]; periode: Periode }) {
+  const c = useCouleurs();
+  const total = liste.reduce((s, a) => s + a.fcfa, 0);
+  return (
+    <Carte ton="fort">
+      <Texte couleur={c.surFortDoux}>{LIBELLE_PERIODE[periode]}</Texte>
+      <Texte taille={police.titre} couleur={c.accentSurFort}>{fcfa(total)}</Texte>
+      <Texte taille={police.petit} couleur={c.surFortDoux}>Répartition estimée à partir de la courbe de votre compteur</Texte>
     </Carte>
   );
 }
@@ -102,6 +116,7 @@ export function Appareils() {
           <Texte doux>Wattou apprend à reconnaître vos appareils. Revenez demain.</Texte>
         ) : (
           <View style={{ gap: espace.m }}>
+            <TotalPeriode liste={liste} periode={periode} />
             {[...liste].sort((x, y) => y.fcfa - x.fcfa).map((a) => (
               <Ligne key={a.id} a={a} onRenomme={() => void ressource.rafraichir()} />
             ))}

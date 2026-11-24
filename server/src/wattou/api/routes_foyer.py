@@ -53,7 +53,7 @@ async def summary(foyer: UUID = Depends(current_foyer), s: AsyncSession = Depend
     days_left_month = (next_month - clock).total_seconds() / 86400
     price = st.price_fcfa_kwh
     return Summary(
-        power_w=power, today_kwh=today, today_fcfa=round(today * price),
+        foyer_name=f["name"], power_w=power, today_kwh=today, today_fcfa=round(today * price),
         price_fcfa_kwh=round(price, 2), credit_kwh=st.remaining_kwh,
         credit_fcfa=round(st.remaining_kwh * price) if st.remaining_kwh is not None else None,
         days_left=st.days_left, depletion_at=st.depletion_at,

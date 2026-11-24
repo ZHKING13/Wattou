@@ -1,5 +1,5 @@
 import { type ReactNode, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, TextInput, View, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { espace, police, polices, rayon, TOUCHE_MIN, useCouleurs } from '../theme';
 
@@ -22,7 +22,7 @@ export function Ecran({ children, testID, defiler = true, onRefresh }: {
       {defiler ? (
         <ScrollView testID={testID ? `defilement-${testID}` : undefined} keyboardShouldPersistTaps="handled"
                     refreshControl={onRefresh
-                      ? <RefreshControl refreshing={tire} onRefresh={rafraichir} colors={[c.accent]} tintColor={c.accent} />
+                      ? <RefreshControl refreshing={tire} onRefresh={rafraichir} colors={[c.accentVif]} tintColor={c.accentVif} />
                       : undefined}>
           {contenu}
         </ScrollView>
@@ -43,29 +43,34 @@ export function Texte({ children, doux, gras, taille, couleur, accessibilityLabe
   return (
     <Text accessibilityLabel={accessibilityLabel} style={{ color: couleur ?? (doux ? c.texteDoux : c.texte), fontSize: taille ?? police.normal,
                    // grands chiffres en Baloo 2, texte courant en Nunito Sans
-                   fontFamily: (taille ?? 0) >= police.titre ? polices.titre : gras ? polices.texteGras : polices.texte }}>
+                   fontFamily: (taille ?? 0) >= police.moyen ? polices.titre : gras ? polices.texteGras : polices.texte }}>
       {children}
     </Text>
   );
 }
 
 export function Carte({ children, ton, testID, style }: {
-  children: ReactNode; ton?: 'alerte' | 'danger'; testID?: string; style?: ViewStyle;
+  children: ReactNode; ton?: 'alerte' | 'danger' | 'fort' | 'accent'; testID?: string; style?: ViewStyle;
 }) {
   const c = useCouleurs();
+  const fond = ton === 'fort' ? c.fort : ton === 'accent' ? c.accent : c.surface;
   const bord = ton === 'alerte' ? c.alerte : ton === 'danger' ? c.danger : c.bordure;
+  const plein = ton === 'fort' || ton === 'accent';
   return (
-    <View testID={testID} accessibilityHint={ton ?? 'normal'} style={[{ backgroundColor: c.surface, borderRadius: rayon.m, padding: espace.l,
-                                    borderWidth: ton ? 2 : StyleSheet.hairlineWidth, borderColor: bord, gap: espace.s }, style]}>
+    <View testID={testID} accessibilityHint={ton ?? 'normal'} style={[{ backgroundColor: fond, borderRadius: rayon.m, padding: espace.l,
+                                    borderWidth: plein ? 0 : ton ? 2 : 1, borderColor: bord, gap: espace.s }, style]}>
       {children}
     </View>
   );
 }
 
-export function Bouton({ titre, onPress, desactive, secondaire, chargement }: {
+export function Bouton({ titre, onPress, desactive, secondaire, chargement, surFort }: {
   titre: string; onPress: () => void; desactive?: boolean; secondaire?: boolean; chargement?: boolean;
+  /** Bouton posé sur une carte bleu nuit. */
+  surFort?: boolean;
 }) {
   const c = useCouleurs();
+  const texteSecondaire = surFort ? c.surFort : c.accentTexte;
   const off = desactive || chargement;
   return (
     <Pressable
@@ -77,9 +82,9 @@ export function Bouton({ titre, onPress, desactive, secondaire, chargement }: {
       style={{ minHeight: TOUCHE_MIN, borderRadius: rayon.m, alignItems: 'center', justifyContent: 'center',
                paddingHorizontal: espace.l, opacity: off ? 0.5 : 1,
                backgroundColor: secondaire ? 'transparent' : c.accent,
-               borderWidth: secondaire ? 1.5 : 0, borderColor: c.accentTexte }}>
-      {chargement ? <ActivityIndicator color={secondaire ? c.accent : c.surAccent} /> : (
-        <Text style={{ color: secondaire ? c.accentTexte : c.surAccent, fontSize: police.normal, fontFamily: polices.texteGras }}>{titre}</Text>
+               borderWidth: secondaire ? 1.5 : 0, borderColor: texteSecondaire }}>
+      {chargement ? <ActivityIndicator color={secondaire ? texteSecondaire : c.surAccent} /> : (
+        <Text style={{ color: secondaire ? texteSecondaire : c.surAccent, fontSize: police.normal, fontFamily: polices.texteGras }}>{titre}</Text>
       )}
     </Pressable>
   );

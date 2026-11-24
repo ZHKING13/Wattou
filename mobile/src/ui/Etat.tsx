@@ -21,7 +21,7 @@ export function EtatRessource<T>({ ressource, children }: { ressource: Ressource
   const c = useCouleurs();
   const { donnees, etat, le, erreur, rafraichir } = ressource;
   if (donnees === null) {
-    if (etat === 'chargement') return <ActivityIndicator color={c.accent} />;
+    if (etat === 'chargement') return <ActivityIndicator color={c.accentVif} />;
     return (
       <View style={{ gap: espace.m }}>
         <Texte>{erreur ?? 'Une erreur est survenue.'}</Texte>
