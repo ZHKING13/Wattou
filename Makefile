@@ -21,4 +21,7 @@ lint:
 e2e: up
 	cd server && uv run pytest ../tests_e2e -q -s -p no:cacheprovider --rootdir=..
 
-.PHONY: up app down test lint e2e
+.PHONY: up app down test lint e2e mobile-test
+
+mobile-test:
+	cd mobile && npx jest && npx tsc --noEmit
