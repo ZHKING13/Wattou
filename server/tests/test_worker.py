@@ -1,0 +1,143 @@
+import json
+from datetime import datetime, timedelta, timezone
+
+from sqlalchemy import select
+
+from wattou import models as m
+from wattou import repo
+from wattou.contract import Meta, MeterState, PlugState
+from wattou.notify import LogNotifier
+from wattou.worker import analyze_foyer
+
+T0 = datetime(2026, 11, 2, 18, tzinfo=timezone.utc)
+
+
+class Pub:
+    def __init__(self):
+        self.sent = []
+
+    async def publish(self, topic, payload, retain=False):
+        self.sent.append((topic, json.loads(payload)))
+
+
+def ms(t, p):
+    return MeterState(ts=t.isoformat(), p_w=p, v=228, i_a=p / 228, pf=0.9, e_kwh=0)
+
+
+async def insert_profile(session, f, minutes_power: list[tuple[int, float]], start=T0):
+    rows, t = [], start
+    for minutes, p in minutes_power:
+        for _ in range(minutes * 60):
+            rows.append(ms(t, p))
+            t += timedelta(seconds=1)
+    for i in range(0, len(rows), 2000):
+        await repo.insert_meter_batch(session, f, rows[i:i + 2000])
+    return t
+
+
+async def test_clim_three_times_one_appliance(session):
+    f = await repo.create_foyer(session, "T")
+    profile = []
+    for _ in range(3):
+        profile += [(20, 50), (20, 1150)]
+    profile += [(20, 50)]
+    await insert_profile(session, f, profile)
+    await analyze_foyer(session, Pub(), LogNotifier(), f)
+    sigs = await repo.list_appliances(session, f)
+    assert len(sigs) == 1 and sigs[0].n_obs == 3 and abs(sigs[0].delta_w - 1100) < 5
+    acts = (await session.execute(select(m.activations).where(m.activations.c.foyer_id == f))).all()
+    assert len(acts) == 3
+    await analyze_foyer(session, Pub(), LogNotifier(), f)
+    acts2 = (await session.execute(select(m.activations).where(m.activations.c.foyer_id == f))).all()
+    assert len(acts2) == 3
+
+
+async def test_steps_at_window_boundary_not_lost(session):
+    f = await repo.create_foyer(session, "T")
+    await insert_profile(session, f, [(10, 50)])
+    await analyze_foyer(session, Pub(), LogNotifier(), f)
+    await insert_profile(session, f, [(10, 1150), (10, 50)], start=T0 + timedelta(minutes=10))
+    await analyze_foyer(session, Pub(), LogNotifier(), f)
+    [sig] = await repo.list_appliances(session, f)
+    assert sig.n_obs == 1
+
+
+async def test_low_credit_triggers_command(session):
+    f = await repo.create_foyer(session, "T")
+    for dev, essential in (("prise-fer", False), ("prise-frigo", True)):
+        await repo.upsert_device(session, f, dev, Meta(kind="plug", name=dev, essential=essential))
+        state = PlugState(ts=T0.isoformat(), p_w=100, on=True).model_dump(mode="json")
+        await repo.set_device_state(session, f, dev, state)
+    await repo.add_credit_entry(session, f, T0, "reading", 1.0, None)
+    await insert_profile(session, f, [(120, 333)])
+    pub, notifier = Pub(), LogNotifier()
+    await repo.add_push_token(session, f, "ExponentPushToken[x]")
+    await analyze_foyer(session, pub, notifier, f)
+    assert (f"wattou/{f}/prise-fer/cmd", {"on": False}) in pub.sent
+    assert not any("prise-frigo" in t for t, _ in pub.sent)
+    assert any("crédit" in body for _, _, body in notifier.sent)
+
+
+async def test_outage_alert_from_gap(session):
+    f = await repo.create_foyer(session, "T")
+    end = await insert_profile(session, f, [(5, 100)])
+    await insert_profile(session, f, [(5, 100)], start=end + timedelta(minutes=30))
+    await analyze_foyer(session, Pub(), LogNotifier(), f)
+    alerts = await repo.list_alerts(session, f)
+    assert [a["kind"] for a in alerts] == ["outage"]
+
+
+async def test_no_peak_alert_without_history(session):
+    f = await repo.create_foyer(session, "T")
+    await insert_profile(session, f, [(60, 50), (60, 1500), (30, 50)], start=T0.replace(hour=1))
+    await analyze_foyer(session, Pub(), LogNotifier(), f)
+    assert [a["kind"] for a in await repo.list_alerts(session, f) if a["kind"] == "peak"] == []
+
+
+async def test_absence_tap_alert(session):
+    f = await repo.create_foyer(session, "T")
+    await repo.set_absence(session, f, True, T0)
+    await insert_profile(session, f, [(20, 50), (30, 450)])
+    await analyze_foyer(session, Pub(), LogNotifier(), f)
+    [a] = [a for a in await repo.list_alerts(session, f) if a["kind"] == "absence_load"]
+    assert a["ts"] == T0 + timedelta(minutes=30)
+
+
+async def test_plug_fridge_stuck_alert(session):
+    f = await repo.create_foyer(session, "T")
+    await repo.upsert_device(session, f, "prise-frigo", Meta(kind="plug", name="Prise frigo", essential=True))
+    for i in range(1100):
+        t = T0 + timedelta(seconds=10 * i)
+        await repo.insert_plug(session, f, "prise-frigo", PlugState(ts=t.isoformat(), p_w=120, on=True))
+    await insert_profile(session, f, [(185, 145)])
+    await analyze_foyer(session, Pub(), LogNotifier(), f)
+    assert [a["kind"] for a in await repo.list_alerts(session, f)] == ["stuck"]
+
+
+async def test_outage_closes_open_activation(session):
+    f = await repo.create_foyer(session, "T")
+    end = await insert_profile(session, f, [(5, 50), (5, 1150)])
+    await analyze_foyer(session, Pub(), LogNotifier(), f)
+    assert len((await repo.get_analysis_state(session, f))[1]) == 1
+    await insert_profile(session, f, [(10, 50)], start=end + timedelta(hours=3))
+    await analyze_foyer(session, Pub(), LogNotifier(), f)
+    assert (await repo.get_analysis_state(session, f))[1] == []
+    acts = await repo.activations_between(session, f, T0, end + timedelta(hours=4))
+    assert len(acts) == 1 and acts[0][0].end <= end
+
+
+async def test_low_credit_rule_fires_once_and_tells_the_user(session):
+    f = await repo.create_foyer(session, "T")
+    await repo.upsert_device(session, f, "prise-fer", Meta(kind="plug", name="prise-fer"))
+    state = PlugState(ts=T0.isoformat(), p_w=0, on=True).model_dump(mode="json")
+    await repo.set_device_state(session, f, "prise-fer", state)
+    await repo.add_credit_entry(session, f, T0, "reading", 1.0, None)
+    end = await insert_profile(session, f, [(120, 333)])
+    pub = Pub()
+    await analyze_foyer(session, pub, LogNotifier(), f)
+    await insert_profile(session, f, [(2, 333)], start=end)
+    await analyze_foyer(session, pub, LogNotifier(), f)
+    cmds = [t for t, _ in pub.sent if t.endswith("/prise-fer/cmd")]
+    assert len(cmds) == 1
+    [rule] = [a for a in await repo.list_alerts(session, f) if a["kind"] == "low_credit_rule"]
+    assert "prise-fer" in rule["message"]
