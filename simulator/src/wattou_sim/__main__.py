@@ -113,6 +113,7 @@ def cli() -> None:
     p.add_argument("--seed", type=int, default=1)
     args = p.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
+    logging.getLogger("mqtt").setLevel(logging.ERROR)  # avertissement « pending publish calls » à chaque lot
     asyncio.run(main(args))
 
 

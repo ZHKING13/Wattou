@@ -21,4 +21,11 @@ lint:
 e2e: up
 	cd server && uv run pytest ../tests_e2e -q -s -p no:cacheprovider --rootdir=..
 
-.PHONY: up app down test lint e2e
+# Prérequis : make up, puis API/ingestion/analyse lancées (voir README) ; WATTOU_API_URL=http://localhost:8000
+mobile-integration:
+	cd mobile && npx jest -c jest.integration.config.js
+
+.PHONY: up app down test lint e2e mobile-test mobile-integration
+
+mobile-test:
+	cd mobile && npx jest && npx tsc --noEmit

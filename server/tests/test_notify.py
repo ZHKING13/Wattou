@@ -17,8 +17,10 @@ async def test_expo_payload():
     await ExpoNotifier(client).send(["ExponentPushToken[a]", "ExponentPushToken[b]"], "Wattou", "Crédit bas")
     assert seen["url"] == "https://exp.host/--/api/v2/push/send"
     assert seen["body"] == [
-        {"to": "ExponentPushToken[a]", "title": "Wattou", "body": "Crédit bas", "sound": "default"},
-        {"to": "ExponentPushToken[b]", "title": "Wattou", "body": "Crédit bas", "sound": "default"},
+        {"to": "ExponentPushToken[a]", "title": "Wattou", "body": "Crédit bas", "sound": "default",
+         "channelId": "alertes", "priority": "high"},
+        {"to": "ExponentPushToken[b]", "title": "Wattou", "body": "Crédit bas", "sound": "default",
+         "channelId": "alertes", "priority": "high"},
     ]
 
 

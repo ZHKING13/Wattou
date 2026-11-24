@@ -29,7 +29,9 @@ class ExpoNotifier:
     async def send(self, tokens: list[str], title: str, body: str) -> None:
         if not tokens:
             return
-        msgs = [{"to": t, "title": title, "body": body, "sound": "default"} for t in tokens]
+        # canal Android « alertes » créé par l'app (importance haute : son + bannière)
+        msgs = [{"to": t, "title": title, "body": body, "sound": "default", "channelId": "alertes",
+                 "priority": "high"} for t in tokens]
         try:
             r = await self.client.post(EXPO_URL, json=msgs)
             r.raise_for_status()

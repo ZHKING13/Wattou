@@ -30,3 +30,8 @@ injectent un branchement sauvage, un frigo bloqué, un délestage ou une coupure
 
 `make e2e` rejoue 14 jours simulés à travers MQTT, l'ingestion, l'analyse et l'API, et vérifie
 les critères de réussite de la spec (≈ 15 min).
+
+## Application mobile
+
+Voir [`mobile/README.md`](mobile/README.md). `make mobile-test` lance ses tests ;
+`make mobile-integration` vérifie le client contre l'API réelle.
