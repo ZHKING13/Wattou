@@ -21,8 +21,8 @@ function Jours({ choisis, onChange }: { choisis: number[]; onChange: (j: number[
                      onPress={() => onChange(coche ? choisis.filter((x) => x !== j) : [...choisis, j].sort())}
                      style={{ minWidth: TOUCHE_MIN, minHeight: TOUCHE_MIN, alignItems: 'center', justifyContent: 'center',
                               borderRadius: rayon.s, backgroundColor: coche ? c.accent : c.surface,
-                              borderWidth: 1, borderColor: c.accent }}>
-            <Texte couleur={coche ? c.surAccent : c.accent}>{nom}</Texte>
+                              borderWidth: 1.5, borderColor: c.accentTexte }}>
+            <Texte couleur={coche ? c.surAccent : c.accentTexte}>{nom}</Texte>
           </Pressable>
         );
       })}

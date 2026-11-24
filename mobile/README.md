@@ -30,5 +30,5 @@ WATTOU_API_URL=http://localhost:8000 make mobile-integration   # contre l'API r�
 
 ## Identité visuelle
 
-Le thème (`src/theme.ts`) est **provisoire** : l'identité définitive ne remplacera que ce fichier,
-l'icône et l'écran de démarrage.
+Piste B « Malin » : voir [`docs/identite-visuelle.md`](../docs/identite-visuelle.md). Les couleurs,
+polices et rayons sont dans `src/theme.ts` ; l'icône et l'écran de démarrage dans `assets/`.

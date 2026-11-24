@@ -7,7 +7,7 @@ function OngletsConnectes() {
   const c = useCouleurs();
   const { nonLues } = useAlertes();
   return (
-    <Tabs screenOptions={{ headerShown: false, tabBarActiveTintColor: c.accent, tabBarStyle: { backgroundColor: c.surface } }}>
+    <Tabs screenOptions={{ headerShown: false, tabBarActiveTintColor: c.accentTexte, tabBarStyle: { backgroundColor: c.surface } }}>
       <Tabs.Screen name="index" options={{ title: 'Accueil' }} />
       <Tabs.Screen name="appareils" options={{ title: 'Appareils' }} />
       <Tabs.Screen name="historique" options={{ title: 'Historique' }} />

@@ -17,8 +17,19 @@ const config: ExpoConfig = {
   scheme: 'wattou',
   orientation: 'portrait',
   userInterfaceStyle: 'automatic',
-  android: { package: 'ci.wattou.app' },
-  plugins: ['expo-router', 'expo-secure-store', 'expo-sqlite', 'expo-notifications'],
+  icon: './assets/icon.png',
+  android: {
+    package: 'ci.wattou.app',
+    adaptiveIcon: { foregroundImage: './assets/adaptive-icon.png', backgroundColor: '#FF6B35' },
+  },
+  plugins: [
+    'expo-router', 'expo-secure-store', 'expo-sqlite', 'expo-font',
+    ['expo-notifications', { color: '#FF6B35' }],
+    ['expo-splash-screen', {
+      image: './assets/splash-icon.png', imageWidth: 160, backgroundColor: '#FFF8F0',
+      dark: { image: './assets/splash-icon.png', backgroundColor: '#1B2A41' },
+    }],
+  ],
   // projectId EAS : à renseigner après `eas init` (nécessaire aux notifications push).
   extra: { apiUrl, eas: { projectId: env.EAS_PROJECT_ID ?? '' } },
 };

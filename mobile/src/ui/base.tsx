@@ -1,7 +1,7 @@
 import { type ReactNode, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { espace, police, rayon, TOUCHE_MIN, useCouleurs } from '../theme';
+import { espace, police, polices, rayon, TOUCHE_MIN, useCouleurs } from '../theme';
 
 export function Ecran({ children, testID, defiler = true, onRefresh }: {
   children: ReactNode; testID?: string; defiler?: boolean; onRefresh?: () => Promise<void>;
@@ -33,7 +33,7 @@ export function Ecran({ children, testID, defiler = true, onRefresh }: {
 
 export function Titre({ children }: { children: ReactNode }) {
   const c = useCouleurs();
-  return <Text accessibilityRole="header" style={{ color: c.texte, fontSize: police.titre, fontWeight: '700' }}>{children}</Text>;
+  return <Text accessibilityRole="header" style={{ color: c.texte, fontSize: police.titre, fontFamily: polices.titre }}>{children}</Text>;
 }
 
 export function Texte({ children, doux, gras, taille, couleur, accessibilityLabel }: {
@@ -42,7 +42,8 @@ export function Texte({ children, doux, gras, taille, couleur, accessibilityLabe
   const c = useCouleurs();
   return (
     <Text accessibilityLabel={accessibilityLabel} style={{ color: couleur ?? (doux ? c.texteDoux : c.texte), fontSize: taille ?? police.normal,
-                   fontWeight: gras ? '700' : '400' }}>
+                   // grands chiffres en Baloo 2, texte courant en Nunito Sans
+                   fontFamily: (taille ?? 0) >= police.titre ? polices.titre : gras ? polices.texteGras : polices.texte }}>
       {children}
     </Text>
   );
@@ -76,9 +77,9 @@ export function Bouton({ titre, onPress, desactive, secondaire, chargement }: {
       style={{ minHeight: TOUCHE_MIN, borderRadius: rayon.m, alignItems: 'center', justifyContent: 'center',
                paddingHorizontal: espace.l, opacity: off ? 0.5 : 1,
                backgroundColor: secondaire ? 'transparent' : c.accent,
-               borderWidth: secondaire ? 1 : 0, borderColor: c.accent }}>
+               borderWidth: secondaire ? 1.5 : 0, borderColor: c.accentTexte }}>
       {chargement ? <ActivityIndicator color={secondaire ? c.accent : c.surAccent} /> : (
-        <Text style={{ color: secondaire ? c.accent : c.surAccent, fontSize: police.normal, fontWeight: '700' }}>{titre}</Text>
+        <Text style={{ color: secondaire ? c.accentTexte : c.surAccent, fontSize: police.normal, fontFamily: polices.texteGras }}>{titre}</Text>
       )}
     </Pressable>
   );
@@ -99,7 +100,8 @@ export function Champ({ libelle, valeur, onChange, secret, clavier, erreur }: {
         secureTextEntry={secret}
         keyboardType={clavier ?? 'default'}
         style={{ minHeight: TOUCHE_MIN, borderRadius: rayon.s, borderWidth: 1, borderColor: erreur ? c.danger : c.bordure,
-                 paddingHorizontal: espace.m, color: c.texte, backgroundColor: c.surface, fontSize: police.normal }}
+                 paddingHorizontal: espace.m, color: c.texte, backgroundColor: c.surface, fontSize: police.normal,
+                 fontFamily: polices.texte }}
       />
       {erreur ? <Text style={{ color: c.danger, fontSize: police.petit }}>{erreur}</Text> : null}
     </View>

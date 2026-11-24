@@ -40,8 +40,8 @@ function BoutonRond({ libelle, signe, onPress, desactive }: {
     <Pressable accessibilityRole="button" accessibilityLabel={libelle} accessibilityState={{ disabled: desactive }}
                disabled={desactive} onPress={onPress}
                style={{ width: TOUCHE_MIN, height: TOUCHE_MIN, borderRadius: TOUCHE_MIN / 2, alignItems: 'center',
-                        justifyContent: 'center', borderWidth: 1, borderColor: c.accent, opacity: desactive ? 0.4 : 1 }}>
-      <Texte gras couleur={c.accent} taille={police.titre}>{signe}</Texte>
+                        justifyContent: 'center', borderWidth: 1.5, borderColor: c.accentTexte, opacity: desactive ? 0.4 : 1 }}>
+      <Texte gras couleur={c.accentTexte} taille={police.titre}>{signe}</Texte>
     </Pressable>
   );
 }
@@ -53,7 +53,7 @@ function LienProgrammer({ d }: { d: Dispositif }) {
     <Pressable accessibilityRole="button" accessibilityLabel={`Programmer ${d.name}`}
                onPress={() => router.push({ pathname: '/programmation/[id]', params: { id: d.id } })}
                style={{ minHeight: TOUCHE_MIN, justifyContent: 'center' }}>
-      <Texte couleur={c.accent}>
+      <Texte couleur={c.accentTexte}>
         {d.schedule.slots.length ? `Programmations (${d.schedule.slots.length})` : 'Programmer'}
       </Texte>
     </Pressable>

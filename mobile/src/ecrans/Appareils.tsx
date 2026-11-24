@@ -57,8 +57,8 @@ function Nommer({ appareil, onFini }: { appareil: Appareil; onFini: () => void }
         {SUGGESTIONS.map((s) => (
           <Pressable key={s} accessibilityRole="button" accessibilityLabel={s} onPress={() => void nommer(s)}
                      style={{ minHeight: TOUCHE_MIN, justifyContent: 'center', paddingHorizontal: espace.m,
-                              borderRadius: rayon.l, borderWidth: 1, borderColor: c.accent }}>
-            <Texte couleur={c.accent}>{s}</Texte>
+                              borderRadius: rayon.l, borderWidth: 1.5, borderColor: c.accentTexte }}>
+            <Texte couleur={c.accentTexte}>{s}</Texte>
           </Pressable>
         ))}
       </View>
