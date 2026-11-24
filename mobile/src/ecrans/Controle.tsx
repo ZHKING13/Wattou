@@ -61,6 +61,7 @@ function LienProgrammer({ d }: { d: Dispositif }) {
 }
 
 function Clim({ d }: { d: Dispositif }) {
+  const c = useCouleurs();
   const [marche, setMarche] = useState(d.last_state.mode !== undefined && d.last_state.mode !== 'off');
   const [consigne, setConsigne] = useState(d.last_state.setpoint_c ?? 26);
   const { erreur, envoyer, envoi } = useCommande(d.id);
@@ -81,6 +82,7 @@ function Clim({ d }: { d: Dispositif }) {
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Texte gras>{d.name}</Texte>
         <Switch accessibilityRole="switch" accessibilityLabel={d.name} value={marche} disabled={envoi}
+                trackColor={{ true: c.accent, false: c.bordure }} thumbColor={c.surface}
                 onValueChange={(v) => {
                   setMarche(v);
                   void envoyer({ mode: v ? 'cool' : 'off' }, () => setMarche(!v));
@@ -99,6 +101,7 @@ function Clim({ d }: { d: Dispositif }) {
 }
 
 function Prise({ d }: { d: Dispositif }) {
+  const c = useCouleurs();
   const [on, setOn] = useState(Boolean(d.last_state.on));
   const { erreur, envoyer, envoi } = useCommande(d.id);
   useEffect(() => {
@@ -113,6 +116,7 @@ function Prise({ d }: { d: Dispositif }) {
         </View>
         {d.essential ? null : (
           <Switch accessibilityRole="switch" accessibilityLabel={d.name} value={on} disabled={envoi}
+                  trackColor={{ true: c.accent, false: c.bordure }} thumbColor={c.surface}
                   onValueChange={(v) => {
                     setOn(v);
                     void envoyer({ on: v }, () => setOn(!v));

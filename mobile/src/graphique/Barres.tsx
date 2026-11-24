@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import Svg, { G, Line, Rect, Text as SvgText } from 'react-native-svg';
 import type { PointHistorique } from '../api/types';
 import { fcfa, kwh } from '../format';
-import { espace, useCouleurs } from '../theme';
+import { espace, polices, useCouleurs } from '../theme';
 import { Texte } from '../ui/base';
 import { graduations } from './echelle';
 
@@ -33,7 +33,7 @@ export function Barres({ points, step, prix }: { points: PointHistorique[]; step
         {ticks.map((t) => (
           <G key={t}>
             <Line x1={MARGE_G} x2={L} y1={y(t)} y2={y(t)} stroke={c.bordure} strokeWidth={1} />
-            <SvgText x={MARGE_G - 4} y={y(t) + 4} fontSize={10} fill={c.texteDoux} textAnchor="end">
+            <SvgText x={MARGE_G - 4} y={y(t) + 4} fontSize={10} fontFamily={polices.texte} fill={c.texteDoux} textAnchor="end">
               {String(t).replace('.', ',')}
             </SvgText>
           </G>
@@ -46,7 +46,7 @@ export function Barres({ points, step, prix }: { points: PointHistorique[]; step
         ))}
         {points.map((p, i) => (i % Math.ceil(points.length / 6) === 0 ? (
           <SvgText key={`x${p.ts}`} x={MARGE_G + i * larg + larg / 2} y={HAUT - 6} fontSize={10}
-                   fill={c.texteDoux} textAnchor="middle">
+                   fontFamily={polices.texte} fill={c.texteDoux} textAnchor="middle">
             {libelleBarre(p, step).split(' :')[0]}
           </SvgText>
         ) : null))}

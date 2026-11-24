@@ -79,3 +79,12 @@ test('stockage sécurisé en panne : écran de connexion, pas d\'écran blanc', 
   await renderRouter(routesApp(deps(fauxApi(), stockage)), { initialUrl: '/' });
   await screen.findByText('Se connecter');
 });
+
+test('chaque onglet a une icône', async () => {
+  const { Icone } = require('../src/ui/icones');
+  const { render } = require('@testing-library/react-native');
+  for (const nom of ['accueil', 'appareils', 'historique', 'controle', 'alertes']) {
+    const r = await render(<Icone nom={nom} couleur="#000" />);
+    expect(JSON.stringify(r.toJSON()).length).toBeGreaterThan(100);
+  }
+});

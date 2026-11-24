@@ -43,7 +43,8 @@ function Absence() {
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Texte gras>Je m’absente</Texte>
         <Switch accessibilityRole="switch" accessibilityLabel="Je m’absente" value={actif}
-                onValueChange={(v) => void basculer(v)} trackColor={{ true: c.alerte, false: c.bordure }} />
+                onValueChange={(v) => void basculer(v)} trackColor={{ true: c.alerte, false: c.bordure }}
+                thumbColor={c.surface} />
       </View>
       <Texte doux>
         {actif
