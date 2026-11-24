@@ -56,3 +56,10 @@ export function date(iso: string): string {
     timeZone: TZ, weekday: 'short', day: 'numeric', month: 'short',
   }).format(new Date(iso));
 }
+
+/** « 80,5 » -> 80.5 ; « 10 000 » -> 10000 ; null si vide ou invalide. */
+export function nombre(saisie: string): number | null {
+  const propre = saisie.replace(/[\s  ]/g, '').replace(',', '.');
+  if (!/^\d+(\.\d+)?$/.test(propre)) return null;
+  return Number(propre);
+}

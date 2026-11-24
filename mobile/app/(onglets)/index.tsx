@@ -1,9 +1,3 @@
-import { Ecran, Titre } from '../../src/ui/base';
+import { Accueil } from '../../src/ecrans/Accueil';
 
-export default function Accueil() {
-  return (
-    <Ecran testID="ecran-accueil">
-      <Titre>Accueil</Titre>
-    </Ecran>
-  );
-}
+export default Accueil;

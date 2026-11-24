@@ -36,7 +36,7 @@ export function Carte({ children, ton, testID, style }: {
   const c = useCouleurs();
   const bord = ton === 'alerte' ? c.alerte : ton === 'danger' ? c.danger : c.bordure;
   return (
-    <View testID={testID} style={[{ backgroundColor: c.surface, borderRadius: rayon.m, padding: espace.l,
+    <View testID={testID} accessibilityHint={ton ?? 'normal'} style={[{ backgroundColor: c.surface, borderRadius: rayon.m, padding: espace.l,
                                     borderWidth: ton ? 2 : StyleSheet.hairlineWidth, borderColor: bord, gap: espace.s }, style]}>
       {children}
     </View>
