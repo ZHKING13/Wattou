@@ -63,9 +63,9 @@ test('fetch qui rejette -> HorsLigne', async () => {
 test('délai de 15 s -> HorsLigne', async () => {
   jest.useFakeTimers();
   const f = jest.fn(() => new Promise<Response>(() => {})) as unknown as typeof fetch;
-  const p = api(f).resume();
+  const attendu = expect(api(f).resume()).rejects.toBeInstanceOf(HorsLigne);
   await jest.advanceTimersByTimeAsync(15_001);
-  await expect(p).rejects.toBeInstanceOf(HorsLigne);
+  await attendu;
   jest.useRealTimers();
 });
 
