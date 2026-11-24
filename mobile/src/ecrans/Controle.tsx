@@ -36,24 +36,25 @@ function BoutonRond({ libelle, signe, onPress, desactive }: {
   libelle: string; signe: string; onPress: () => void; desactive: boolean;
 }) {
   const c = useCouleurs();
+  // posé sur la carte bleu nuit de la clim
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={libelle} accessibilityState={{ disabled: desactive }}
                disabled={desactive} onPress={onPress}
                style={{ width: TOUCHE_MIN, height: TOUCHE_MIN, borderRadius: TOUCHE_MIN / 2, alignItems: 'center',
-                        justifyContent: 'center', borderWidth: 1.5, borderColor: c.accentTexte, opacity: desactive ? 0.4 : 1 }}>
-      <Texte gras couleur={c.accentTexte} taille={police.titre}>{signe}</Texte>
+                        justifyContent: 'center', borderWidth: 1.5, borderColor: c.accentSurFort, opacity: desactive ? 0.4 : 1 }}>
+      <Texte gras couleur={c.accentSurFort} taille={police.titre}>{signe}</Texte>
     </Pressable>
   );
 }
 
-function LienProgrammer({ d }: { d: Dispositif }) {
+function LienProgrammer({ d, surFort }: { d: Dispositif; surFort?: boolean }) {
   const c = useCouleurs();
   const router = useRouter();
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={`Programmer ${d.name}`}
                onPress={() => router.push({ pathname: '/programmation/[id]', params: { id: d.id } })}
                style={{ minHeight: TOUCHE_MIN, justifyContent: 'center' }}>
-      <Texte couleur={c.accentTexte}>
+      <Texte couleur={surFort ? c.accentSurFort : c.accentTexte}>
         {d.schedule.slots.length ? `Programmations (${d.schedule.slots.length})` : 'Programmer'}
       </Texte>
     </Pressable>
@@ -78,11 +79,11 @@ function Clim({ d }: { d: Dispositif }) {
     void envoyer({ setpoint_c: apres }, () => setConsigne(avant));
   };
   return (
-    <Carte testID={`dispositif-${d.id}`}>
+    <Carte testID={`dispositif-${d.id}`} ton="fort">
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Texte gras>{d.name}</Texte>
+        <Texte gras couleur={c.surFort}>{d.name}</Texte>
         <Switch accessibilityRole="switch" accessibilityLabel={d.name} value={marche} disabled={envoi}
-                trackColor={{ true: c.accent, false: c.bordure }} thumbColor={c.surface}
+                trackColor={{ true: c.accent, false: c.surFortDoux }} thumbColor={c.surFort}
                 onValueChange={(v) => {
                   setMarche(v);
                   void envoyer({ mode: v ? 'cool' : 'off' }, () => setMarche(!v));
@@ -90,12 +91,12 @@ function Clim({ d }: { d: Dispositif }) {
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: espace.l }}>
         <BoutonRond libelle="Baisser la consigne" signe="−" onPress={() => changerConsigne(-1)} desactive={consigne <= CONSIGNE_MIN} />
-        <Texte gras taille={police.titre}>{`${consigne} °C`}</Texte>
+        <Texte taille={police.titre} couleur={c.accentSurFort}>{`${consigne} °C`}</Texte>
         <BoutonRond libelle="Monter la consigne" signe="+" onPress={() => changerConsigne(1)} desactive={consigne >= CONSIGNE_MAX} />
       </View>
-      <Texte doux taille={police.petit}>Chaque degré en plus réduit la consommation de la clim d’environ 6 %.</Texte>
+      <Texte taille={police.petit} couleur={c.surFortDoux}>Chaque degré en plus réduit la consommation de la clim d’environ 6 %.</Texte>
       <MessageErreur message={erreur} />
-      <LienProgrammer d={d} />
+      <LienProgrammer d={d} surFort />
     </Carte>
   );
 }

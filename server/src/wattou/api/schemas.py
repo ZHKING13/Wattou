@@ -21,6 +21,7 @@ class TokenOut(BaseModel):
 
 
 class Summary(BaseModel):
+    foyer_name: str
     power_w: float
     today_kwh: float
     today_fcfa: float

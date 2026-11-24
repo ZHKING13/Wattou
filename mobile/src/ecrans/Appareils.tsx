@@ -89,6 +89,20 @@ function Ligne({ a, onRenomme }: { a: Appareil; onRenomme: () => void }) {
   );
 }
 
+const LIBELLE_PERIODE: Record<Periode, string> = { day: 'Aujourd’hui', week: 'Ces 7 jours', month: 'Ces 30 jours' };
+
+function TotalPeriode({ liste, periode }: { liste: Appareil[]; periode: Periode }) {
+  const c = useCouleurs();
+  const total = liste.reduce((s, a) => s + a.fcfa, 0);
+  return (
+    <Carte ton="fort">
+      <Texte couleur={c.surFortDoux}>{LIBELLE_PERIODE[periode]}</Texte>
+      <Texte taille={police.titre} couleur={c.accentSurFort}>{fcfa(total)}</Texte>
+      <Texte taille={police.petit} couleur={c.surFortDoux}>Répartition estimée à partir de la courbe de votre compteur</Texte>
+    </Carte>
+  );
+}
+
 export function Appareils() {
   const api = useApi();
   const [periode, setPeriode] = useState<Periode>('day');
@@ -102,6 +116,7 @@ export function Appareils() {
           <Texte doux>Wattou apprend à reconnaître vos appareils. Revenez demain.</Texte>
         ) : (
           <View style={{ gap: espace.m }}>
+            <TotalPeriode liste={liste} periode={periode} />
             {[...liste].sort((x, y) => y.fcfa - x.fcfa).map((a) => (
               <Ligne key={a.id} a={a} onRenomme={() => void ressource.rafraichir()} />
             ))}

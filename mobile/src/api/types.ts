@@ -3,6 +3,7 @@
 export type Jeton = { token: string; foyer_id: string };
 
 export type Resume = {
+  foyer_name: string;
   power_w: number;
   today_kwh: number;
   today_fcfa: number;

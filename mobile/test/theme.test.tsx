@@ -20,6 +20,13 @@ test.each(['light', 'dark'] as const)('piste B lisible en mode %s (≥ 4,5:1)', 
   expect(contraste(c.accentTexte, c.surface)).toBeGreaterThanOrEqual(4.5);
   expect(contraste(c.alerte, c.surface)).toBeGreaterThanOrEqual(4.5);
   expect(contraste(c.danger, c.surface)).toBeGreaterThanOrEqual(4.5);
+  // carte « nuit » de la maquette B : texte crème et chiffre corail sur bleu nuit
+  expect(contraste(c.surFort, c.fort)).toBeGreaterThanOrEqual(4.5);
+  expect(contraste(c.surFortDoux, c.fort)).toBeGreaterThanOrEqual(4.5);
+  expect(contraste(c.accentSurFort, c.fort)).toBeGreaterThanOrEqual(4.5);
+  expect(contraste(c.surSuccesFond, c.succesFond)).toBeGreaterThanOrEqual(4.5);
+  expect(contraste(c.surAlerteFond, c.alerteFond)).toBeGreaterThanOrEqual(4.5);
+  expect(contraste(c.surAccent, c.accentSurFort)).toBeGreaterThanOrEqual(4.5);
 });
 
 test('couleurs de la piste B', () => {

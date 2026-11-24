@@ -39,14 +39,14 @@ function Absence() {
     }
   }
   return (
-    <Carte ton={actif ? 'alerte' : undefined}>
+    <Carte ton="fort">
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Texte gras>Je m’absente</Texte>
+        <Texte gras couleur={c.surFort}>Je m’absente</Texte>
         <Switch accessibilityRole="switch" accessibilityLabel="Je m’absente" value={actif}
-                onValueChange={(v) => void basculer(v)} trackColor={{ true: c.alerte, false: c.bordure }}
-                thumbColor={c.surface} />
+                onValueChange={(v) => void basculer(v)} trackColor={{ true: c.accent, false: c.surFortDoux }}
+                thumbColor={c.surFort} />
       </View>
-      <Texte doux>
+      <Texte couleur={c.surFortDoux}>
         {actif
           ? 'Wattou vous prévient si quelque chose consomme pendant votre absence.'
           : 'Activez-le quand vous partez : toute consommation inconnue déclenchera une alerte.'}
