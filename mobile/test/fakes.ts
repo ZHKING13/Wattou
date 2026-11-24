@@ -27,7 +27,8 @@ export const MAINTENANT = new Date('2026-11-24T15:00:00Z');
 
 export function deps(api: Api, stockage = stockageMemoire({ token: 'j', foyer_id: 'f1' }),
                      extra: Partial<Dependances> = {}): Dependances {
-  return { creerApi: () => api, stockage, cache: cacheMemoire(), maintenant: () => MAINTENANT, ...extra } as Dependances;
+  return { creerApi: () => api, stockage, cache: cacheMemoire(), maintenant: () => MAINTENANT,
+           push: { demanderEtEnregistrer: async () => 'indisponible' as const, ecouterOuvertures: () => () => {} }, ...extra } as Dependances;
 }
 
 export function cacheMemoire() {
