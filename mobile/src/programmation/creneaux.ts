@@ -36,3 +36,23 @@ function action(a: CommandePrise | CommandeClim): string {
 export function resumer(c: Creneau): string {
   return `${jours(c.days)} ${c.at} : ${action(c.action)}`;
 }
+
+/** Heure saisie au pavé numérique (« 0630 », « 630 », « 6 », « 6h30 », « 06:30 ») -> « HH:MM ». */
+export function normaliserHeure(saisie: string): string | null {
+  const m = saisie.trim().match(/^(\d{1,2})(?:[:hH.]?(\d{2}))?$/);
+  const chiffres = saisie.replace(/\D/g, '');
+  let h: number;
+  let min: number;
+  if (m) {
+    h = Number(m[1]);
+    min = m[2] ? Number(m[2]) : 0;
+    if (!m[2] && chiffres.length > 2) return null;
+  } else if (/^\d{3,4}$/.test(chiffres) && chiffres === saisie.trim()) {
+    h = Number(chiffres.slice(0, -2));
+    min = Number(chiffres.slice(-2));
+  } else {
+    return null;
+  }
+  if (h > 23 || min > 59) return null;
+  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+}

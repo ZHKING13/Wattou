@@ -3,14 +3,12 @@ import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import type { Creneau, Dispositif } from '../api/types';
 import { useRessource } from '../donnees/useRessource';
-import { JOURS_COURTS, resumer, trier, valider } from '../programmation/creneaux';
+import { JOURS_COURTS, normaliserHeure, resumer, trier, valider } from '../programmation/creneaux';
 import { useApi } from '../session/SessionContext';
 import { espace, rayon, TOUCHE_MIN, useCouleurs } from '../theme';
 import { Bouton, Carte, Champ, Ecran, MessageErreur, Texte, Titre } from '../ui/base';
 import { EtatRessource } from '../ui/Etat';
 import { Segments } from '../ui/Segments';
-
-const HEURE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 function Jours({ choisis, onChange }: { choisis: number[]; onChange: (j: number[]) => void }) {
   const c = useCouleurs();
@@ -45,8 +43,10 @@ function Editeur({ d }: { d: Dispositif }) {
   const [envoi, setEnvoi] = useState(false);
 
   function ajouter() {
+    const at = normaliserHeure(heure);
+    if (!at) return;
     const nouveau: Creneau = {
-      at: heure, days: jours,
+      at, days: jours,
       action: clim
         ? (action === 'off' ? { mode: 'off' } : { mode: 'cool', setpoint_c: Number(consigne) })
         : { on: action === 'on' },
@@ -90,13 +90,14 @@ function Editeur({ d }: { d: Dispositif }) {
       ))}
       <Carte>
         <Texte gras>Nouvelle action</Texte>
-        <Champ libelle="Heure (HH:MM)" valeur={heure} onChange={setHeure} clavier="number-pad" />
+        <Champ libelle="Heure (ex. 0630)" valeur={heure} onChange={setHeure} clavier="number-pad" />
+        {normaliserHeure(heure) ? <Texte doux>{normaliserHeure(heure)}</Texte> : null}
         <Jours choisis={jours} onChange={setJours} />
         <Segments items={[['on', 'Allumer'], ['off', 'Éteindre']]} actif={action} onChange={setAction} />
         {clim && action === 'on' ? (
           <Champ libelle="Consigne (°C)" valeur={consigne} onChange={setConsigne} clavier="number-pad" />
         ) : null}
-        <Bouton titre="Ajouter" onPress={ajouter} desactive={!HEURE.test(heure) || !consigneOk} secondaire />
+        <Bouton titre="Ajouter" onPress={ajouter} desactive={!normaliserHeure(heure) || !consigneOk} secondaire />
       </Carte>
       <MessageErreur message={erreur} />
       <Bouton titre="Enregistrer" onPress={() => void enregistrer()} chargement={envoi} />

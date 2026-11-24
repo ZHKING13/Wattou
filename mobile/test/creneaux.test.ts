@@ -26,3 +26,15 @@ test('résumés lisibles', () => {
     .toBe('Tous les jours 19:00 : allumer à 26 °C');
   expect(resumer({ at: '07:30', days: [5, 6], action: { on: true } })).toBe('Sam, Dim 07:30 : allumer');
 });
+
+test('heure tapée au pavé numérique Android (sans « : »)', () => {
+  const { normaliserHeure } = require('../src/programmation/creneaux');
+  expect(normaliserHeure('0600')).toBe('06:00');
+  expect(normaliserHeure('600')).toBe('06:00');
+  expect(normaliserHeure('6')).toBe('06:00');
+  expect(normaliserHeure('2130')).toBe('21:30');
+  expect(normaliserHeure('06:00')).toBe('06:00');
+  expect(normaliserHeure('6h30')).toBe('06:30');
+  expect(normaliserHeure('2460')).toBeNull();
+  expect(normaliserHeure('')).toBeNull();
+});

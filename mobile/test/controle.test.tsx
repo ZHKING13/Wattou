@@ -78,7 +78,8 @@ test('programmer la clim : éteindre à 6 h en semaine', async () => {
   const programmer = jest.fn(async (_id: string, p: unknown) => p as never);
   await ouvrir({ programmer });
   await fireEvent.press(screen.getByRole('button', { name: 'Programmer Clim salon' }));
-  await fireEvent.changeText(await screen.findByLabelText('Heure (HH:MM)'), '06:00');
+  await fireEvent.changeText(await screen.findByLabelText('Heure (ex. 0630)'), '0600');
+  screen.getByText('06:00');
   for (const j of ['Sam', 'Dim']) await fireEvent.press(screen.getByRole('checkbox', { name: j }));
   await fireEvent.press(screen.getByRole('tab', { name: 'Éteindre' }));
   await fireEvent.press(screen.getByRole('button', { name: 'Ajouter' }));
