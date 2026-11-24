@@ -13,6 +13,7 @@ export function routesApp(deps: Dependances) {
     '(onglets)/appareils': ecran('(onglets)/appareils'),
     '(onglets)/historique': ecran('(onglets)/historique'),
     '(onglets)/controle': ecran('(onglets)/controle'),
+    '(onglets)/alertes': ecran('(onglets)/alertes'),
     credit: ecran('credit'),
     'programmation/[id]': ecran('programmation/[id]'),
   };

@@ -18,12 +18,12 @@ export function Titre({ children }: { children: ReactNode }) {
   return <Text accessibilityRole="header" style={{ color: c.texte, fontSize: police.titre, fontWeight: '700' }}>{children}</Text>;
 }
 
-export function Texte({ children, doux, gras, taille, couleur }: {
-  children: ReactNode; doux?: boolean; gras?: boolean; taille?: number; couleur?: string;
+export function Texte({ children, doux, gras, taille, couleur, accessibilityLabel }: {
+  children: ReactNode; doux?: boolean; gras?: boolean; taille?: number; couleur?: string; accessibilityLabel?: string;
 }) {
   const c = useCouleurs();
   return (
-    <Text style={{ color: couleur ?? (doux ? c.texteDoux : c.texte), fontSize: taille ?? police.normal,
+    <Text accessibilityLabel={accessibilityLabel} style={{ color: couleur ?? (doux ? c.texteDoux : c.texte), fontSize: taille ?? police.normal,
                    fontWeight: gras ? '700' : '400' }}>
       {children}
     </Text>
