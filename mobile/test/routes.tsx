@@ -10,6 +10,7 @@ export function routesApp(deps: Dependances) {
     '(auth)/inscription': ecran('(auth)/inscription'),
     '(onglets)/_layout': ecran('(onglets)/_layout'),
     '(onglets)/index': ecran('(onglets)/index'),
+    '(onglets)/appareils': ecran('(onglets)/appareils'),
     credit: ecran('credit'),
   };
 }

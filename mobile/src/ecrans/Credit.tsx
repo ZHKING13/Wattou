@@ -1,30 +1,12 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
 import { Refuse } from '../api/erreurs';
 import { nombre } from '../format';
 import { useApi } from '../session/SessionContext';
-import { espace, rayon, TOUCHE_MIN, useCouleurs } from '../theme';
 import { Bouton, Champ, Ecran, Texte, Titre } from '../ui/base';
+import { Segments } from '../ui/Segments';
 
 type Onglet = 'reading' | 'recharge';
-
-function Onglets({ actif, onChange }: { actif: Onglet; onChange: (o: Onglet) => void }) {
-  const c = useCouleurs();
-  const items: [Onglet, string][] = [['reading', 'Relevé du compteur'], ['recharge', 'Recharge']];
-  return (
-    <View accessibilityRole="tablist" style={{ flexDirection: 'row', gap: espace.s }}>
-      {items.map(([id, nom]) => (
-        <Pressable key={id} accessibilityRole="tab" accessibilityLabel={nom} accessibilityState={{ selected: actif === id }}
-                   onPress={() => onChange(id)}
-                   style={{ flex: 1, minHeight: TOUCHE_MIN, alignItems: 'center', justifyContent: 'center',
-                            borderRadius: rayon.s, backgroundColor: actif === id ? c.accent : c.surface }}>
-          <Texte couleur={actif === id ? c.surAccent : c.texte}>{nom}</Texte>
-        </Pressable>
-      ))}
-    </View>
-  );
-}
 
 export function Credit() {
   const api = useApi();
@@ -57,7 +39,8 @@ export function Credit() {
   return (
     <Ecran testID="ecran-credit">
       <Titre>Crédit du compteur</Titre>
-      <Onglets actif={onglet} onChange={(o) => { setOnglet(o); setErreur(null); }} />
+      <Segments items={[['reading', 'Relevé du compteur'], ['recharge', 'Recharge']]} actif={onglet}
+                onChange={(o) => { setOnglet(o); setErreur(null); }} />
       {onglet === 'reading' ? (
         <>
           <Texte doux>Recopiez le nombre de kWh qu’affiche votre compteur CIE en ce moment.</Texte>
