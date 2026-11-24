@@ -11,6 +11,7 @@ export default function Onglets() {
     <Tabs screenOptions={{ headerShown: false, tabBarActiveTintColor: c.accent, tabBarStyle: { backgroundColor: c.surface } }}>
       <Tabs.Screen name="index" options={{ title: 'Accueil' }} />
       <Tabs.Screen name="appareils" options={{ title: 'Appareils' }} />
+      <Tabs.Screen name="historique" options={{ title: 'Historique' }} />
     </Tabs>
   );
 }

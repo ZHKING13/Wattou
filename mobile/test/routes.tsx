@@ -11,6 +11,7 @@ export function routesApp(deps: Dependances) {
     '(onglets)/_layout': ecran('(onglets)/_layout'),
     '(onglets)/index': ecran('(onglets)/index'),
     '(onglets)/appareils': ecran('(onglets)/appareils'),
+    '(onglets)/historique': ecran('(onglets)/historique'),
     credit: ecran('credit'),
   };
 }
