@@ -13,7 +13,7 @@ module.exports = {
       preset: 'jest-expo',
       testMatch: ['<rootDir>/test/**/*.test.tsx'],
       transformIgnorePatterns: [
-        '/node_modules/(?!(react-native|@react-native|@react-native-community|expo|@expo|expo-router|react-navigation|@react-navigation|react-native-svg))',
+        '/node_modules/(?!(react-native|@react-native|@react-native-community|expo|@expo|expo-router|react-navigation|@react-navigation|standard-navigation|react-native-svg))',
       ],
     },
   ],
