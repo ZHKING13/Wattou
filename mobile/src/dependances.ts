@@ -27,6 +27,7 @@ export const dependancesReelles: Dependances = {
     estAppareil: Device.isDevice,
     projectId: (Constants.expoConfig?.extra?.eas?.projectId as string | undefined) ?? '',
     plateforme: Platform.OS,
+    importanceHaute: Notifications.AndroidImportance.HIGH,
   }),
   maintenant: () => new Date(),
 };

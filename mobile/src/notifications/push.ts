@@ -16,6 +16,8 @@ export type ModuleNotifications = Pick<typeof N, 'getPermissionsAsync' | 'reques
 
 export function creerPush(o: {
   notifications: ModuleNotifications; estAppareil: boolean; projectId: string; plateforme: string;
+  /** Notifications.AndroidImportance.HIGH (son + bannière) ; injecté pour les tests en Node. */
+  importanceHaute: number;
 }): Push {
   return {
     async demanderEtEnregistrer(api) {
@@ -23,7 +25,7 @@ export function creerPush(o: {
       try {
         if (o.plateforme === 'android') {
           await o.notifications.setNotificationChannelAsync('alertes', {
-            name: 'Alertes Wattou', importance: 4 /* HIGH */,
+            name: 'Alertes Wattou', importance: o.importanceHaute,
           });
         }
         let { status } = await o.notifications.getPermissionsAsync();

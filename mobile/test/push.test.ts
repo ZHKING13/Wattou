@@ -14,8 +14,9 @@ function module(statut: 'granted' | 'denied', dejaAccorde = false): ModuleNotifi
 test('permission accordée : jeton envoyé au serveur, canal Android créé', async () => {
   const enregistrerPush = jest.fn(async () => {});
   const n = module('granted');
-  const push = creerPush({ notifications: n, estAppareil: true, projectId: 'p1', plateforme: 'android' });
+  const push = creerPush({ notifications: n, estAppareil: true, projectId: 'p1', plateforme: 'android', importanceHaute: 6 });
   expect(await push.demanderEtEnregistrer({ enregistrerPush })).toBe('ok');
+  expect(n.setNotificationChannelAsync).toHaveBeenCalledWith('alertes', expect.objectContaining({ importance: 6 }));
   expect(enregistrerPush).toHaveBeenCalledWith('ExponentPushToken[x]');
   expect(n.canaux).toEqual(['alertes']);
   expect(n.getExpoPushTokenAsync).toHaveBeenCalledWith({ projectId: 'p1' });
@@ -23,22 +24,22 @@ test('permission accordée : jeton envoyé au serveur, canal Android créé', as
 
 test('permission refusée : aucun appel', async () => {
   const enregistrerPush = jest.fn(async () => {});
-  const push = creerPush({ notifications: module('denied'), estAppareil: true, projectId: 'p1', plateforme: 'android' });
+  const push = creerPush({ notifications: module('denied'), estAppareil: true, projectId: 'p1', plateforme: 'android', importanceHaute: 6 });
   expect(await push.demanderEtEnregistrer({ enregistrerPush })).toBe('refuse');
   expect(enregistrerPush).not.toHaveBeenCalled();
 });
 
 test('sans projet EAS ou sur simulateur : indisponible, sans erreur', async () => {
   const enregistrerPush = jest.fn(async () => {});
-  expect(await creerPush({ notifications: module('granted'), estAppareil: true, projectId: '', plateforme: 'android' })
+  expect(await creerPush({ notifications: module('granted'), estAppareil: true, projectId: '', plateforme: 'android', importanceHaute: 6 })
     .demanderEtEnregistrer({ enregistrerPush })).toBe('indisponible');
-  expect(await creerPush({ notifications: module('granted'), estAppareil: false, projectId: 'p1', plateforme: 'android' })
+  expect(await creerPush({ notifications: module('granted'), estAppareil: false, projectId: 'p1', plateforme: 'android', importanceHaute: 6 })
     .demanderEtEnregistrer({ enregistrerPush })).toBe('indisponible');
   expect(enregistrerPush).not.toHaveBeenCalled();
 });
 
 test('erreur réseau à l\'enregistrement : indisponible, pas d\'exception', async () => {
   const enregistrerPush = jest.fn(async () => { throw new Error('réseau'); });
-  const push = creerPush({ notifications: module('granted', true), estAppareil: true, projectId: 'p1', plateforme: 'android' });
+  const push = creerPush({ notifications: module('granted', true), estAppareil: true, projectId: 'p1', plateforme: 'android', importanceHaute: 6 });
   expect(await push.demanderEtEnregistrer({ enregistrerPush })).toBe('indisponible');
 });
