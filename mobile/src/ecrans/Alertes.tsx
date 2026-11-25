@@ -51,7 +51,7 @@ function Absence() {
           ? 'Wattou vous prévient si quelque chose consomme pendant votre absence.'
           : 'Activez-le quand vous partez : toute consommation inconnue déclenchera une alerte.'}
       </Texte>
-      <MessageErreur message={erreur} />
+      <MessageErreur message={erreur} surFort />
     </Carte>
   );
 }

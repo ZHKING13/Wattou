@@ -101,3 +101,14 @@ test('l\'état des prises suit le serveur après rafraîchissement (coupure par 
   await act(async () => { await defil.props.refreshControl.props.onRefresh(); });
   await waitFor(() => expect(screen.getByRole('switch', { name: 'Prise fer à repasser' }).props.value).toBe(false));
 });
+
+
+test('erreur sur la carte bleu nuit de la clim : message lisible', async () => {
+  const { couleursPour } = require('../src/theme');
+  const commander = jest.fn(async () => { throw new PilotageIndisponible(); });
+  await ouvrir({ commander });
+  await fireEvent(screen.getByRole('switch', { name: 'Clim salon' }), 'valueChange', false);
+  const message = await screen.findByText('Le pilotage est momentanément indisponible. Réessayez dans un instant.');
+  const style = Array.isArray(message.props.style) ? Object.assign({}, ...message.props.style) : message.props.style;
+  expect(style.color).toBe(couleursPour('light').dangerSurFort);
+});

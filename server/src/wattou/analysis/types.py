@@ -27,6 +27,7 @@ class DeviceView:
     kind: str
     essential: bool
     last_state: dict = field(default_factory=dict)
+    name: str = ""  # nom lisible (« Prise fer à repasser ») pour les messages
 
 
 @dataclass(frozen=True)

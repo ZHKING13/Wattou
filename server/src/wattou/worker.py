@@ -88,7 +88,7 @@ async def analyze_foyer(s: AsyncSession, pub: Publisher, notifier: Notifier, foy
         if d.kind == "plug" and d.essential and any(k in d.id for k in al.STUCK_LABELS):
             series = await repo.plug_series(s, foyer_id, d.id,
                                             window_end - timedelta(hours=al.STUCK_H, minutes=1), window_end)
-            found += al.check_plug_stuck(d.id, d.id, series, window_end)
+            found += al.check_plug_stuck(d.id, d.name or d.id, series, window_end)
     if caught_up:
         entries = await repo.credit_entries(s, foyer_id)
 
@@ -128,12 +128,13 @@ async def analyze_foyer(s: AsyncSession, pub: Publisher, notifier: Notifier, foy
         low = status.days_left is not None and status.days_left < foyer["low_credit_days"]
         if low and not foyer["low_credit_active"]:
             # déclenchement au franchissement du seuil seulement : l'utilisateur garde la main
-            actions = low_credit_actions(status.days_left, foyer["low_credit_days"],
-                                         await repo.device_views(s, foyer_id))
+            vues = await repo.device_views(s, foyer_id)
+            noms = {v.id: v.name or v.id for v in vues}
+            actions = low_credit_actions(status.days_left, foyer["low_credit_days"], vues)
             for device_id, cmd in actions:
                 await send_command(pub, foyer_id, device_id, cmd)
             if actions:
-                done = ", ".join(sorted(d for d, _ in actions))
+                done = ", ".join(sorted(noms.get(d, d) for d, _ in actions))
                 found.append(Alert("low_credit_rule", window_end,
                                    f"Crédit bas : Wattou a coupé ou réduit {done} pour faire durer "
                                    "votre crédit. Vous pouvez les rallumer depuis l'application.",

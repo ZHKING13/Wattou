@@ -113,8 +113,12 @@ export function Champ({ libelle, valeur, onChange, secret, clavier, erreur }: {
   );
 }
 
-export function MessageErreur({ message }: { message: string | null }) {
+export function MessageErreur({ message, surFort }: { message: string | null; surFort?: boolean }) {
   const c = useCouleurs();
   if (!message) return null;
-  return <Text accessibilityRole="alert" style={{ color: c.danger }}>{message}</Text>;
+  return (
+    <Text accessibilityRole="alert" style={{ color: surFort ? c.dangerSurFort : c.danger, fontFamily: polices.texteGras }}>
+      {message}
+    </Text>
+  );
 }

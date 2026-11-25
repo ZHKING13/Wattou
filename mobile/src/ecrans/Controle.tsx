@@ -95,7 +95,7 @@ function Clim({ d }: { d: Dispositif }) {
         <BoutonRond libelle="Monter la consigne" signe="+" onPress={() => changerConsigne(1)} desactive={consigne >= CONSIGNE_MAX} />
       </View>
       <Texte taille={police.petit} couleur={c.surFortDoux}>Chaque degré en plus réduit la consommation de la clim d’environ 6 %.</Texte>
-      <MessageErreur message={erreur} />
+      <MessageErreur message={erreur} surFort />
       <LienProgrammer d={d} surFort />
     </Carte>
   );
