@@ -18,9 +18,8 @@ dans l'app, puis lancez le simulateur avec le `foyer_id` du compte (voir le READ
 
 ## Build Android (EAS)
 
-Projet EAS : `@zetreyy/wattou`. Avant le premier build de test, remplacez dans `eas.json`
-(profil `preview`) l'adresse provisoire `https://REMPLACER-PAR-URL-RAILWAY.invalid` par l'URL publique
-de l'API sur Railway (voir `infra/railway/README.md`), puis :
+Projet EAS : `@zetreyy/wattou`. Le profil `preview` vise l'API déployée sur Railway
+(`https://wattou-production.up.railway.app`, voir `infra/railway/README.md`) :
 
 ```bash
 eas build --platform android --profile preview

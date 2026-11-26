@@ -13,7 +13,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://REMPLACER-PAR-URL-RAILWAY.invalid"
+        "EXPO_PUBLIC_API_URL": "https://wattou-production.up.railway.app"
       }
     }
   },
