@@ -20,6 +20,8 @@ persistence false
 max_queued_messages 0
 max_inflight_messages 0
 CONF
+  # Mosquitto abandonne root pour l'utilisateur « mosquitto » : il doit pouvoir lire ses fichiers
+  chown -R mosquitto:mosquitto /tmp/mosquitto
   mosquitto -c /tmp/mosquitto/mosquitto.conf &
 }
 
