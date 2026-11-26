@@ -21,3 +21,22 @@ def test_tarif_override(monkeypatch):
     monkeypatch.setenv("WATTOU_JWT_SECRET", "x")
     monkeypatch.setenv("TARIF_FCFA_KWH_DEFAUT", "95.5")
     assert Settings().tarif_fcfa_kwh_defaut == 95.5
+
+
+def test_database_url_railway_normalisee(monkeypatch):
+    """Railway fournit postgresql:// (ou postgres://) ; SQLAlchemy async veut postgresql+asyncpg://."""
+    monkeypatch.setenv("WATTOU_MQTT_HOST", "x")
+    monkeypatch.setenv("WATTOU_JWT_SECRET", "x")
+    for brute in ("postgresql://u:p@h:5432/railway", "postgres://u:p@h:5432/railway"):
+        monkeypatch.setenv("WATTOU_DATABASE_URL", brute)
+        assert Settings().database_url == "postgresql+asyncpg://u:p@h:5432/railway"
+    monkeypatch.setenv("WATTOU_DATABASE_URL", "postgresql+asyncpg://u:p@h/db")
+    assert Settings().database_url == "postgresql+asyncpg://u:p@h/db"
+
+
+def test_port_http_railway(monkeypatch):
+    monkeypatch.setenv("WATTOU_DATABASE_URL", "x")
+    monkeypatch.setenv("WATTOU_MQTT_HOST", "x")
+    monkeypatch.setenv("WATTOU_JWT_SECRET", "x")
+    monkeypatch.setenv("PORT", "4321")
+    assert Settings().port == 4321
