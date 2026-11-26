@@ -16,10 +16,22 @@ Sur l'émulateur Android, le serveur local est joignable à `http://10.0.2.2:800
 Pour avoir des données : `make app` (ou API + ingestion + analyse lancées à la main), créez un compte
 dans l'app, puis lancez le simulateur avec le `foyer_id` du compte (voir le README racine).
 
+## Build Android (EAS)
+
+Projet EAS : `@zetreyy/wattou`. Avant le premier build de test, remplacez dans `eas.json`
+(profil `preview`) l'adresse provisoire `https://REMPLACER-PAR-URL-RAILWAY.invalid` par l'URL publique
+de l'API sur Railway (voir `infra/railway/README.md`), puis :
+
+```bash
+eas build --platform android --profile preview
+```
+
+Le build produit un APK installable directement sur un téléphone Android.
+
 ## Notifications push
 
-Elles nécessitent un projet EAS : lancez `eas init`, puis exportez `EAS_PROJECT_ID` avant le build,
-et démarrez le serveur avec `WATTOU_EXPO_PUSH_ENABLED=true`.
+Elles demandent une clé FCM (Firebase) enregistrée dans le projet EAS (`eas credentials`),
+et le serveur démarré avec `WATTOU_EXPO_PUSH_ENABLED=true`.
 
 ## Tests
 
