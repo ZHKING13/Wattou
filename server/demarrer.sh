@@ -27,7 +27,7 @@ CONF
 
 api() {
   alembic upgrade head
-  exec uvicorn wattou.api.app:create_app --factory --host :: --port "${PORT:-8000}"
+  exec uvicorn wattou.api.app:create_app --factory --host 0.0.0.0 --port "${PORT:-8000}"
 }
 
 case "${WATTOU_ROLE:-api}" in
@@ -41,7 +41,7 @@ case "${WATTOU_ROLE:-api}" in
     sleep 1
     python -m wattou.ingest &
     python -m wattou.worker &
-    uvicorn wattou.api.app:create_app --factory --host :: --port "${PORT:-8000}" &
+    uvicorn wattou.api.app:create_app --factory --host 0.0.0.0 --port "${PORT:-8000}" &
     wait -n
     echo "un processus s'est arrêté : redémarrage du conteneur" >&2
     exit 1 ;;
