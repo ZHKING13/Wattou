@@ -6,6 +6,5 @@ RUN uv sync --frozen --no-dev --no-install-project
 COPY . .
 RUN uv sync --frozen --no-dev
 ENV PATH="/app/.venv/bin:$PATH"
-# Par défaut : l'API (migrations puis serveur HTTP sur $PORT, fourni par Railway).
-# Les services « ingest » et « worker » remplacent cette commande (infra/railway/*.json).
-CMD ["sh", "-c", "alembic upgrade head && uvicorn wattou.api.app:create_app --factory --host 0.0.0.0 --port ${PORT:-8000}"]
+# Rôle choisi par WATTOU_ROLE (api, ingest, worker) : voir demarrer.sh.
+CMD ["sh", "/app/demarrer.sh"]

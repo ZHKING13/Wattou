@@ -5,11 +5,11 @@ Un projet Railway « wattou », environnement `production`, avec :
 | Service | Dossier racine | Fichier de config | Variables |
 |---|---|---|---|
 | Postgres | (base gérée Railway) | — | — |
-| mqtt | `/infra/mosquitto` | `/infra/railway/mqtt.json` | `MQTT_SERVER_PASSWORD`, `MQTT_DEVICE_PASSWORD` (générés) ; proxy TCP sur 1883 pour les vrais kits |
-| api | `/server` | `/infra/railway/api.json` | communes ci-dessous ; domaine public HTTPS |
-| ingest | `/server` | `/infra/railway/ingest.json` | communes |
-| worker | `/server` | `/infra/railway/worker.json` | communes |
-| simulateur (facultatif) | `/simulator` | `/infra/railway/simulateur.json` | `WATTOU_SIM_FOYER`, `MQTT_HOST=mqtt.railway.internal`, `MQTT_DEVICE_PASSWORD` |
+| mqtt | `/infra/mosquitto` | `infra/mosquitto/railway.json` | `MQTT_SERVER_PASSWORD`, `MQTT_DEVICE_PASSWORD` (générés) ; proxy TCP sur 1883 pour les vrais kits |
+| api | `/server` | — | communes + `WATTOU_ROLE=api` ; domaine public HTTPS |
+| ingest | `/server` | — | communes + `WATTOU_ROLE=ingest` |
+| worker | `/server` | — | communes + `WATTOU_ROLE=worker` |
+| simulateur (facultatif) | `/simulator` | `simulator/railway.json` | `WATTOU_SIM_FOYER`, `MQTT_HOST=mqtt.railway.internal`, `MQTT_DEVICE_PASSWORD` |
 
 Variables communes (api, ingest, worker) :
 
