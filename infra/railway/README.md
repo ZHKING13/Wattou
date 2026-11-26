@@ -1,5 +1,17 @@
 # Déploiement Railway
 
+## Déploiement actuel (offre gratuite) : un seul service
+
+L'offre gratuite limite le nombre de services. Le projet `wattou` contient donc :
+
+- **Postgres** (base gérée Railway) ;
+- **wattou** (dossier `/server`) avec `WATTOU_ROLE=tout` : Mosquitto, ingestion, analyse et API dans
+  le même conteneur. Variables : `WATTOU_ROLE=tout`, `WATTOU_DATABASE_URL=${{Postgres.DATABASE_URL}}`,
+  `WATTOU_JWT_SECRET`, `MQTT_SERVER_PASSWORD`, `MQTT_DEVICE_PASSWORD` (aléatoires), `TARIF_FCFA_KWH_DEFAUT=110`.
+  Domaine public HTTPS pour l'API ; un proxy TCP sur 1883 sera nécessaire pour les vrais kits.
+
+## Déploiement séparé (offre payante)
+
 Un projet Railway « wattou », environnement `production`, avec :
 
 | Service | Dossier racine | Fichier de config | Variables |
