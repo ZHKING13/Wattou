@@ -100,7 +100,9 @@ async def energy_by_bucket(s: AsyncSession, foyer_id: UUID, start: datetime, end
     """kWh par seau [start, end)."""
     interval = {"minute": timedelta(minutes=1), "hour": timedelta(hours=1), "day": timedelta(days=1)}[step]
     rows = await s.execute(text(
-        f"SELECT time_bucket(:iv, ts) AS b, sum(ws) / 3600000.0 FROM ({_WEIGHTED}) x "
+        # date_bin (PostgreSQL ≥ 14) plutôt que time_bucket : marche aussi sans TimescaleDB
+        "SELECT date_bin(:iv, ts, TIMESTAMPTZ '2000-01-01 00:00:00+00') AS b, sum(ws) / 3600000.0 "
+        f"FROM ({_WEIGHTED}) x "
         "WHERE ts >= :a2 AND ts < :z2 GROUP BY b ORDER BY b"),
         {"iv": interval, "f": foyer_id, "a": start - timedelta(seconds=1), "z": end,
          "a2": start, "z2": end})

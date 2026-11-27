@@ -10,9 +10,13 @@ if (!apiUrl && horsDev) {
   );
 }
 
+// Projet EAS créé par `eas init` (compte zetreyy).
+const ID_PROJET_EAS = '1a5a5762-3089-440a-a693-5aa14e441288';
+
 const config: ExpoConfig = {
   name: 'Wattou',
   slug: 'wattou',
+  owner: 'zetreyy',
   version: '0.1.0',
   scheme: 'wattou',
   orientation: 'portrait',
@@ -30,8 +34,7 @@ const config: ExpoConfig = {
       dark: { image: './assets/splash-icon.png', backgroundColor: '#1B2A41' },
     }],
   ],
-  // projectId EAS : à renseigner après `eas init` (nécessaire aux notifications push).
-  extra: { apiUrl, eas: { projectId: env.EAS_PROJECT_ID ?? '' } },
+  extra: { apiUrl, eas: { projectId: ID_PROJET_EAS } },
 };
 
 export default config;
