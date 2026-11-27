@@ -8,7 +8,14 @@ L'offre gratuite limite le nombre de services. Le projet `wattou` contient donc 
 - **wattou** (dossier `/server`) avec `WATTOU_ROLE=tout` : Mosquitto, ingestion, analyse et API dans
   le même conteneur. Variables : `WATTOU_ROLE=tout`, `WATTOU_DATABASE_URL=${{Postgres.DATABASE_URL}}`,
   `WATTOU_JWT_SECRET`, `MQTT_SERVER_PASSWORD`, `MQTT_DEVICE_PASSWORD` (aléatoires), `TARIF_FCFA_KWH_DEFAUT=110`.
-  Domaine public HTTPS pour l'API ; un proxy TCP sur 1883 sera nécessaire pour les vrais kits.
+  Domaine public HTTPS pour l'API ; proxy TCP public sur 1883 pour les vrais kits.
+- Image : `infra/railway/Dockerfile` (contexte = racine du dépôt, variable
+  `RAILWAY_DOCKERFILE_PATH=infra/railway/Dockerfile`), qui embarque aussi le simulateur.
+- Démo : `WATTOU_SIM_CIBLE=dernier` (ou un numéro `+225…`) fait simuler ce foyer dans le conteneur,
+  avec `WATTOU_SIM_JOURS` jours d'historique s'il n'a encore aucune mesure, puis en temps réel.
+  Retirez la variable pour arrêter la simulation.
+
+Déployer : `railway up . --service wattou` depuis la racine du dépôt.
 
 ## Déploiement séparé (offre payante)
 

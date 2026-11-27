@@ -25,6 +25,24 @@ CONF
   mosquitto -c /tmp/mosquitto/mosquitto.conf &
 }
 
+# Démo : WATTOU_SIM_CIBLE = « dernier » (dernier foyer créé) ou un numéro +225… ; le simulateur
+# envoie WATTOU_SIM_JOURS jours d'historique (3 par défaut) si le foyer n'a encore aucune mesure,
+# puis des mesures en temps réel.
+lancer_simulateur() {
+  [ -n "${WATTOU_SIM_CIBLE:-}" ] || return 0
+  local cible foyer deja jours
+  cible=$(python -m wattou.demo "$WATTOU_SIM_CIBLE" || true)
+  if [ -z "$cible" ]; then
+    echo "simulateur : aucun foyer pour « $WATTOU_SIM_CIBLE », pas de simulation" >&2
+    return 0
+  fi
+  read -r foyer deja <<< "$cible"
+  jours=$([ "$deja" = "1" ] && echo 0 || echo "${WATTOU_SIM_JOURS:-3}")
+  echo "simulateur : foyer $foyer, $jours jour(s) d'historique puis temps réel"
+  python -m wattou_sim --foyer "$foyer" --host 127.0.0.1 --user device --password "$MQTT_DEVICE_PASSWORD" \
+    --start "$(date -u -d "-${jours} days" +%Y-%m-%dT%H:%M:%SZ)" --backfill-days "$jours" --speed 1 &
+}
+
 api() {
   alembic upgrade head
   exec uvicorn wattou.api.app:create_app --factory --host 0.0.0.0 --port "${PORT:-8000}"
@@ -41,6 +59,7 @@ case "${WATTOU_ROLE:-api}" in
     sleep 1
     python -m wattou.ingest &
     python -m wattou.worker &
+    lancer_simulateur
     uvicorn wattou.api.app:create_app --factory --host 0.0.0.0 --port "${PORT:-8000}" &
     wait -n
     echo "un processus s'est arrêté : redémarrage du conteneur" >&2
