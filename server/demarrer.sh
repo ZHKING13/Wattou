@@ -25,22 +25,27 @@ CONF
   mosquitto -c /tmp/mosquitto/mosquitto.conf &
 }
 
-# Démo : WATTOU_SIM_CIBLE = « dernier » (dernier foyer créé) ou un numéro +225… ; le simulateur
-# envoie WATTOU_SIM_JOURS jours d'historique (3 par défaut) si le foyer n'a encore aucune mesure,
-# puis des mesures en temps réel.
+# Démo : WATTOU_SIM_CIBLE = « dernier » (dernier foyer créé) ou un numéro +225… Le simulateur reprend
+# à la dernière mesure du foyer (ou WATTOU_SIM_JOURS jours en arrière, 3 par défaut, s'il n'en a
+# aucune), comble le trou en accéléré, puis continue en temps réel.
 lancer_simulateur() {
   [ -n "${WATTOU_SIM_CIBLE:-}" ] || return 0
-  local cible foyer deja jours
+  local cible foyer derniere debut jours
   cible=$(python -m wattou.demo "$WATTOU_SIM_CIBLE" || true)
   if [ -z "$cible" ]; then
     echo "simulateur : aucun foyer pour « $WATTOU_SIM_CIBLE », pas de simulation" >&2
     return 0
   fi
-  read -r foyer deja <<< "$cible"
-  jours=$([ "$deja" = "1" ] && echo 0 || echo "${WATTOU_SIM_JOURS:-3}")
-  echo "simulateur : foyer $foyer, $jours jour(s) d'historique puis temps réel"
+  read -r foyer derniere <<< "$cible"
+  if [ "$derniere" = "-" ]; then
+    debut=$(date -u -d "-${WATTOU_SIM_JOURS:-3} days" +%Y-%m-%dT%H:%M:%SZ)
+  else
+    debut=$(date -u -d "$derniere + 1 second" +%Y-%m-%dT%H:%M:%SZ)
+  fi
+  jours=$(python -c "from datetime import datetime,timezone as t;import sys;d=datetime.fromisoformat(sys.argv[1].replace('Z','+00:00'));print(max(0,(datetime.now(t.utc)-d).total_seconds()/86400))" "$debut")
+  echo "simulateur : foyer $foyer, reprise à $debut ($jours jour(s) à combler) puis temps réel"
   python -m wattou_sim --foyer "$foyer" --host 127.0.0.1 --user device --password "$MQTT_DEVICE_PASSWORD" \
-    --start "$(date -u -d "-${jours} days" +%Y-%m-%dT%H:%M:%SZ)" --backfill-days "$jours" --speed 1 &
+    --start "$debut" --backfill-days "$jours" --speed 1 &
 }
 
 api() {

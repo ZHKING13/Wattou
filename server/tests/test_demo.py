@@ -23,9 +23,10 @@ async def test_cible_dernier_foyer_et_par_telephone(session):
     assert await foyer_cible(session, "+2259999999999") is None
 
 
-async def test_indique_si_le_foyer_a_deja_des_mesures(session):
+async def test_donne_la_derniere_mesure_pour_combler_le_trou(session):
     f = await repo.create_foyer(session, "Chez Awa")
-    assert (await foyer_cible(session, "dernier")) == (f, False)
-    t = datetime(2026, 11, 2, tzinfo=timezone.utc)
-    await repo.insert_meter(session, f, MeterState(ts=t.isoformat(), p_w=1, v=230, i_a=0, pf=1, e_kwh=0))
-    assert (await foyer_cible(session, "dernier")) == (f, True)
+    assert (await foyer_cible(session, "dernier")) == (f, None)
+    for h in (1, 3):
+        t = datetime(2026, 11, 2, h, tzinfo=timezone.utc)
+        await repo.insert_meter(session, f, MeterState(ts=t.isoformat(), p_w=1, v=230, i_a=0, pf=1, e_kwh=0))
+    assert (await foyer_cible(session, "dernier")) == (f, datetime(2026, 11, 2, 3, tzinfo=timezone.utc))

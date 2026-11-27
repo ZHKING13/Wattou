@@ -1,12 +1,14 @@
 """Démo hébergée : retrouve le foyer à alimenter avec le simulateur.
 
-`python -m wattou.demo <critère>` affiche « <foyer_id> <0|1> » (1 = le foyer a déjà des mesures),
-ou rien si aucun foyer ne correspond. Critère : « dernier » (foyer créé le plus récemment)
+`python -m wattou.demo <critère>` affiche « <foyer_id> <dernière mesure ISO ou -> », ou rien si aucun
+foyer ne correspond : le simulateur reprend à la dernière mesure pour combler un éventuel trou.
+Critère : « dernier » (foyer créé le plus récemment)
 ou un numéro de téléphone au format +225XXXXXXXXXX.
 """
 
 import asyncio
 import sys
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -16,7 +18,7 @@ from . import models as m
 from .db import sessionmaker
 
 
-async def foyer_cible(s: AsyncSession, critere: str) -> tuple[UUID, bool] | None:
+async def foyer_cible(s: AsyncSession, critere: str) -> tuple[UUID, datetime | None] | None:
     if critere == "dernier":
         q = select(m.foyers.c.id).order_by(m.foyers.c.created_at.desc()).limit(1)
     else:
@@ -25,16 +27,15 @@ async def foyer_cible(s: AsyncSession, critere: str) -> tuple[UUID, bool] | None
     if foyer is None:
         return None
     r = m.meter_readings.c
-    n = (await s.execute(select(func.count()).select_from(
-        select(r.ts).where(r.foyer_id == foyer).limit(1).subquery()))).scalar_one()
-    return foyer, n > 0
+    derniere = (await s.execute(select(func.max(r.ts)).where(r.foyer_id == foyer))).scalar_one()
+    return foyer, derniere
 
 
 async def _main(critere: str) -> None:
     async with sessionmaker()() as s:
         res = await foyer_cible(s, critere)
     if res:
-        print(res[0], int(res[1]))
+        print(res[0], res[1].isoformat() if res[1] else "-")
 
 
 if __name__ == "__main__":
