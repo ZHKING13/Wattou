@@ -30,3 +30,27 @@ async def test_donne_la_derniere_mesure_pour_combler_le_trou(session):
         t = datetime(2026, 11, 2, h, tzinfo=timezone.utc)
         await repo.insert_meter(session, f, MeterState(ts=t.isoformat(), p_w=1, v=230, i_a=0, pf=1, e_kwh=0))
     assert (await foyer_cible(session, "dernier")) == (f, datetime(2026, 11, 2, 3, tzinfo=timezone.utc))
+
+
+async def test_reinitialiser_efface_les_mesures_mais_garde_le_compte(session):
+    from uuid import uuid4
+
+    from wattou.analysis.types import ApplianceSig
+    from wattou.api.auth import hash_password
+    from wattou.demo import reinitialiser
+
+    f = await repo.create_foyer(session, "Chez Awa")
+    await repo.create_user(session, "+2250700000003", hash_password("secret1"), f)
+    t = datetime(2026, 11, 2, tzinfo=timezone.utc)
+    await repo.insert_meter(session, f, MeterState(ts=t.isoformat(), p_w=1, v=230, i_a=0, pf=1, e_kwh=0))
+    await repo.save_appliances(session, f, [ApplianceSig(uuid4(), None, 100, 0.9, 3)])
+    await repo.add_alert(session, f, t, "outage", "x", "k")
+    await repo.set_analysis_state(session, f, t, [])
+    await repo.add_credit_entry(session, f, t, "reading", 50, None)
+    await reinitialiser(session, f)
+    assert await repo.latest_ts(session, f) is None
+    assert await repo.list_appliances(session, f) == []
+    assert await repo.list_alerts(session, f) == []
+    assert (await repo.get_analysis_state(session, f))[0] is None
+    assert len(await repo.credit_entries(session, f)) == 1
+    assert await repo.get_user_by_phone(session, "+2250700000003")

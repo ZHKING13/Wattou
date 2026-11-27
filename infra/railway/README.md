@@ -13,7 +13,8 @@ L'offre gratuite limite le nombre de services. Le projet `wattou` contient donc 
   `RAILWAY_DOCKERFILE_PATH=infra/railway/Dockerfile`), qui embarque aussi le simulateur.
 - Démo : `WATTOU_SIM_CIBLE=dernier` (ou un numéro `+225…`) fait simuler ce foyer dans le conteneur,
   avec `WATTOU_SIM_JOURS` jours d'historique s'il n'a encore aucune mesure, puis en temps réel.
-  Retirez la variable pour arrêter la simulation.
+  Retirez la variable pour arrêter la simulation. `WATTOU_SIM_REINITIALISER=1` efface d'abord les
+  mesures simulées du foyer (compte et crédit conservés) : à retirer juste après le démarrage.
 
 Déployer : `railway up . --service wattou` depuis la racine du dépôt.
 

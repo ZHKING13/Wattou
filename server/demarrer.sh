@@ -31,7 +31,8 @@ CONF
 lancer_simulateur() {
   [ -n "${WATTOU_SIM_CIBLE:-}" ] || return 0
   local cible foyer derniere debut jours
-  cible=$(python -m wattou.demo "$WATTOU_SIM_CIBLE" || true)
+  # WATTOU_SIM_REINITIALISER=1 : repart de zéro (efface les mesures simulées du foyer) ; à retirer ensuite
+  cible=$(python -m wattou.demo "$WATTOU_SIM_CIBLE" ${WATTOU_SIM_REINITIALISER:+--reinitialiser} || true)
   if [ -z "$cible" ]; then
     echo "simulateur : aucun foyer pour « $WATTOU_SIM_CIBLE », pas de simulation" >&2
     return 0

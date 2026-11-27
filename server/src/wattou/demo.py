@@ -11,7 +11,7 @@ import sys
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from . import models as m
@@ -31,12 +31,25 @@ async def foyer_cible(s: AsyncSession, critere: str) -> tuple[UUID, datetime | N
     return foyer, derniere
 
 
-async def _main(critere: str) -> None:
+async def reinitialiser(s: AsyncSession, foyer: UUID) -> None:
+    """Efface les mesures simulées d'un foyer et tout ce qui en découle (appareils reconnus,
+    activations, alertes, état d'analyse). Garde le compte, les appareils connectés et le crédit."""
+    for table in (m.activations, m.appliances, m.alerts, m.analysis_state, m.meter_readings, m.plug_readings):
+        await s.execute(delete(table).where(table.c.foyer_id == foyer))
+
+
+async def _main(args: list[str]) -> None:
+    reinit = "--reinitialiser" in args
+    critere = next((a for a in args if not a.startswith("--")), "dernier")
     async with sessionmaker()() as s:
         res = await foyer_cible(s, critere)
+        if res and reinit:
+            await reinitialiser(s, res[0])
+            await s.commit()
+            res = (res[0], None)
     if res:
         print(res[0], res[1].isoformat() if res[1] else "-")
 
 
 if __name__ == "__main__":
-    asyncio.run(_main(sys.argv[1] if len(sys.argv) > 1 else "dernier"))
+    asyncio.run(_main(sys.argv[1:]))
